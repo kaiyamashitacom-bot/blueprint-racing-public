@@ -223,6 +223,10 @@ describe("管理者", () => {
     expect(ok.status).toBe(200);
     expect(ok.data.config.season).toMatchObject({ tournamentMul: 12, everydayMul: 1 });
     expect((await boss.call("POST", "/api/admin/config/reset")).data.config.prizePerPoint).toBe(DEFAULT_ADMIN_CONFIG.prizePerPoint);
+    // 走りの決まり (誰でも読める) に 部品の強さの倍率と練習の賞金が出る
+    await boss.call("PUT", "/api/admin/config", { partStrength: 1.2, partKindStrength: { engine: 1.1 }, practicePrizeDailyLaps: 30 });
+    const rules = (await p.call("GET", "/api/race-rules")).data;
+    expect(rules).toMatchObject({ partStrength: 1.2, partKindStrength: { engine: 1.1, tire: 1 }, practicePrizePerLap: DEFAULT_ADMIN_CONFIG.practicePrizePerLap, practicePrizeDailyLaps: 30 });
     const pl = await boss.call("GET", "/api/admin/players");
     expect(pl.data.players.map((x: any) => x.login)).toEqual(["alice", "boss"]);
     expect(pl.data.players.find((x: any) => x.login === "boss").admin).toBe(true);

@@ -49,6 +49,7 @@ export * from "./teamorder.ts";
 export * from "./league.ts";
 export * from "./bench.ts";
 export * from "./timeattack.ts";
+export * from "./practiceprize.ts";
 export * from "./constructors.ts";
 export * from "./radio.ts";
 export * from "./replay.ts";

@@ -39,6 +39,7 @@ import { partBox, refreshAccount } from "../api.ts";
 import { commitRevision, currentRevision, dropRevisions, load, palette, partsKey, revLabel, revisionsOf, save, type Revision } from "../store.ts";
 import { el, fitCanvas } from "./dom.ts";
 import { fuelLaps } from "./setup.ts";
+import { partStrength } from "../race_rules.ts";
 
 /** 試走台の 1 コースの答え (コースの id → 2 周目) */
 type BenchSet = Record<string, BenchLap>;
@@ -385,7 +386,7 @@ export function mountBuilder(root: HTMLElement, go: Go): () => void {
   const quick = (parts: Placed[]): Quick | null => {
     if (!parts.length) return null;
     const d: CarDesign = { name: "", parts };
-    const st = computeStats(d);
+    const st = computeStats(d, partStrength());
     return { st, top: st.power > 0 ? st.topSpeed * 3.6 : 0, corner: cornerSpeed(st) * 3.6, ok: validateDesign(d).length === 0 };
   };
 
@@ -414,7 +415,7 @@ export function mountBuilder(root: HTMLElement, go: Go): () => void {
     const set = benchCache.get(job.key) ?? {};
     const def = TRACK_DEFS.find((t) => !set[t.id]);
     if (def) {
-      set[def.id] = benchLap(computeStats({ name: "", parts: job.parts }), getTrack(def.id));
+      set[def.id] = benchLap(computeStats({ name: "", parts: job.parts }, partStrength()), getTrack(def.id));
       benchCache.delete(job.key);
       benchCache.set(job.key, set);
       while (benchCache.size > BENCH_CACHE) benchCache.delete(benchCache.keys().next().value!);
@@ -582,9 +583,9 @@ export function mountBuilder(root: HTMLElement, go: Go): () => void {
     if (!any) {
       spec.append(el("div", { class: "empty" }, "部品を置くと性能が出ます"));
     } else {
-      const st = computeStats(design);
+      const st = computeStats(design, partStrength());
       const refParts = compare ? compare.parts : prevParts;
-      const ref = refParts && refParts.length ? computeStats({ name: "", parts: refParts }) : null;
+      const ref = refParts && refParts.length ? computeStats({ name: "", parts: refParts }, partStrength()) : null;
       meterRow("重さ", `${Math.round(st.mass)} kg`, st.mass / 600, false, deltaChip(ref ? st.mass - ref.mass : null, "down", (v) => `${Math.round(v)}`, 0.5));
       meterRow("力", `${Math.round(st.power)} kW`, st.power / 140, false, deltaChip(ref ? st.power - ref.power : null, "up", (v) => `${Math.round(v)}`, 0.5));
       meterRow("曲がりの握り", `${st.gripAccel.toFixed(1)} m/s²${st.downK ? " + 羽根" : ""}`, st.gripAccel / 15);
@@ -804,7 +805,7 @@ export function mountBuilder(root: HTMLElement, go: Go): () => void {
     }
 
     if (design.parts.length) {
-      const st = computeStats(design);
+      const st = computeStats(design, partStrength());
       // 重心
       drawComMarker(ctx, st.comC * cell, st.comR * cell, Math.max(7, cell * 0.24), p);
       // 車の幅と長さ: 部品のある範囲の帯と札

@@ -17,7 +17,8 @@ import { BETS_ADMIN_PATH, BetStore, handleBetsAdminApi, type PlaceBetInput } fro
 import { TOUR_BETS_PATH, handleTourBetsApi, reconcileTourBets, settleTourBets } from "./bets_tour.ts";
 import { RP_PATH, RacePointStore, earnTaLap, handleRacePointsApi } from "./racepoints.ts";
 import { ApiError } from "./accounts.ts";
-import { TRACK_DEFS, type CustomRoomConfig } from "@bpr/shared";
+import { PRACTICE_PATH, PracticeStore, handlePracticeApi } from "./practice.ts";
+import { TRACK_DEFS, partStrengthOf, type CustomRoomConfig, type PartStrength } from "@bpr/shared";
 
 export interface AccountsEnv {
   /** 管理者のログイン ID (カンマ区切り)。作るときは server/.dev.vars に BPR_ADMIN_IDS=... と書く (git に入れない) */
@@ -32,8 +33,8 @@ export interface AccountsEnv {
 
 /** 大会の組の部屋の RPC (worker.ts の RaceRoomDO.setupTournament) と、開いた部屋の RPC (setupCustom) */
 interface TourRoomStub {
-  setupTournament(field: FixedField): Promise<boolean>;
-  setupCustom(cfg: CustomRoomConfig): Promise<boolean>;
+  setupTournament(field: FixedField, strength?: PartStrength): Promise<boolean>;
+  setupCustom(cfg: CustomRoomConfig, strength?: PartStrength): Promise<boolean>;
 }
 
 /** alarm は早くてもこれだけ先 (仮。続けて起きすぎないように) */
@@ -57,6 +58,8 @@ export class AccountsDO extends DurableObject<AccountsEnv> {
   private bets: BetStore;
   /** 走行点と交換所 (racepoints.ts。同じ SQLite に表を足す) */
   private rp: RacePointStore;
+  /** 練習の賞金 (practice.ts。同じ SQLite に表を足す) */
+  private practice: PracticeStore;
   /** 作るときだけ: 季節と大会の時計をずらす ms (本番は 0) */
   private devOffset = 0;
   /** 置いた alarm の時刻 (undefined = わからない) */
@@ -78,10 +81,11 @@ export class AccountsDO extends DurableObject<AccountsEnv> {
     });
     // マニュアルの速さの上がり分 (管理者の数) で、マニュアルの周の速さの上限をゆるめる
     // 1 周アタックの走行点 (racepoints.ts。確かめの通った周ごと / 記録更新。1 日の上限あり)
-    this.ta = new TaStore({ sql, tx, mtBonus: () => this.season.config().manualSpeedBonus, earn: (id, improved, at) => earnTaLap(sql, this.season.config(), id, improved, at) });
+    this.ta = new TaStore({ sql, tx, mtBonus: () => this.season.config().manualSpeedBonus, strength: () => this.season.config(), earn: (id, improved, at) => earnTaLap(sql, this.season.config(), id, improved, at) });
     // 季節の切れ目 (運転手の契約) も同じ時計で進むよう、チームにも同じ時計を渡す
     const now = () => Date.now() + this.devOffset;
-    this.team = new TeamStore({ sql, tx, now }, this.store);
+    // 市場の手数料は管理者の数 (marketFeeRate)
+    this.team = new TeamStore({ sql, tx, now, marketFeeRate: () => this.season.config().marketFeeRate }, this.store);
     this.season = new SeasonStore(
       { sql, tx, now, teamInfo: (acc, design) => this.team.raceTeam(acc, design), onDriverChampions: (season, ids) => void this.team.championBonus(season, ids), onConstructorChampion: (season, teamId) => void this.team.rarePrize(season, teamId), classMoves: () => this.gifts.takeClassMoves(),
         // 大会の景品 (結果と同じ取りまとめで)・全員参加の大会の車・毎日の自動の大会
@@ -98,6 +102,7 @@ export class AccountsDO extends DurableObject<AccountsEnv> {
     this.gifts = new GiftStore({ sql, tx, now, caps: () => this.season.config() }, this.store, this.team, this.season);
     this.bets = new BetStore({ sql, tx, config: () => this.season.config() }, this.store);
     this.rp = new RacePointStore({ sql, tx, now, config: () => this.season.config() }, this.store, this.gifts);
+    this.practice = new PracticeStore({ sql, tx, now, config: () => this.season.config(), trackDef: (id) => this.tracks.publicDef(id) });
     if (env.BPR_DEV_CLOCK === "1" || env.BPR_DEV === "1") {
       const r = sql.exec("SELECT body FROM season_kv WHERE k = 'dev_offset'").toArray()[0];
       this.devOffset = r ? Number(JSON.parse(String(r.body))) || 0 : 0;
@@ -131,7 +136,7 @@ export class AccountsDO extends DurableObject<AccountsEnv> {
         if (!ns) break;
         const stub = ns.get(ns.idFromName(`tour-${field.tag.replace(":", "-")}`)) as unknown as TourRoomStub;
         // 部屋は本当の時計で動く (作るときに時計をずらしていたら戻して渡す)
-        if (await stub.setupTournament({ ...field, startAt: field.startAt - this.devOffset })) this.season.markPushed(field.tag);
+        if (await stub.setupTournament({ ...field, startAt: field.startAt - this.devOffset }, partStrengthOf(this.season.config()))) this.season.markPushed(field.tag);
       } catch (e) {
         console.error("tour room", (e as Error)?.message ?? e);
       }
@@ -156,6 +161,7 @@ export class AccountsDO extends DurableObject<AccountsEnv> {
     if (PLAYERS_ADMIN_PATH.test(p0)) return handlePlayersAdminApi(req, p0, req.method, this.store);
     if (GIFT_PATH.test(p0)) return handleGiftApi(req, p0, req.method, this.store, this.gifts);
     if (RP_PATH.test(p0)) return handleRacePointsApi(req, p0, req.method, this.store, this.rp);
+    if (PRACTICE_PATH.test(p0)) return handlePracticeApi(req, p0, req.method, this.store, this.practice);
     // 賭けの量と一時停止 (管理者だけ。一時停止は管理者の数 betPaused を変えるので、変更の記録にも残る)
     if (TOUR_BETS_PATH.test(p0)) return handleTourBetsApi(req, p0, req.method, this.store, this.season, this.bets);
     if (BETS_ADMIN_PATH.test(p0)) return handleBetsAdminApi(req, p0, req.method, this.store, this.bets, (paused, by) => void this.season.setConfig({ betPaused: paused }, by));
@@ -222,7 +228,7 @@ export class AccountsDO extends DurableObject<AccountsEnv> {
         const ns = this.env.ROOM;
         if (!ns) return false;
         const stub = ns.get(ns.idFromName(`custom-${cfg.id}`)) as unknown as TourRoomStub;
-        return stub.setupCustom(cfg);
+        return stub.setupCustom(cfg, partStrengthOf(this.season.config()));
       },
     };
   }

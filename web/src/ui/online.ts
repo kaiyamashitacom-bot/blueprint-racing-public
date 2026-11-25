@@ -12,6 +12,7 @@ import { activeDesign, load } from "../store.ts";
 import { el, transTag } from "./dom.ts";
 import { raceTireSetup, setupFuel, setupPanel } from "./setup.ts";
 import { syncRaceSetup } from "../rooms_api.ts";
+import { partStrength } from "../race_rules.ts";
 
 export function mountOnline(
   root: HTMLElement,
@@ -27,7 +28,7 @@ export function mountOnline(
     return () => {};
   }
   const s = load();
-  const stats = computeStats(design);
+  const stats = computeStats(design, partStrength());
 
   let myId = "";
   let waiting = false;

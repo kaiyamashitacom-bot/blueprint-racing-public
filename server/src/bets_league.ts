@@ -13,17 +13,15 @@ import {
   SKY_NAMES,
   STAND_IN_SKILL,
   TRACK_DEFS,
-  benchLap,
+  cachedBenchLap,
   betBlockedReason,
   betCarKey,
   betClosesAt,
   betRaceWeather,
   bookOdds,
   buildBetBook,
-  computeStats,
   driverTraits,
   familiaritySkillBonus,
-  getTrack,
   leagueDayAt,
   leagueName,
   parseBetPick,
@@ -51,26 +49,8 @@ export const BETS_PATH = /^\/api\/bets(\/|$)/;
 const PLACE_KEYS = new Set(["raceId", "kind", "pick", "stake", "odds"]);
 const MAX_BODY = 2 * 1024;
 
-// ---------------------------------------------------------------- 試走台の 1 周 (重いので覚えておく)
+// ---------------------------------------------------------------- 試走台の 1 周 (重いので覚えておく。tourgrid.ts の cachedBenchLap)
 
-const benchCache = new Map<string, number | null>();
-const BENCH_CACHE_MAX = 400;
-
-function benchOf(design: CarDesign, trackId: string): number | null {
-  const k = `${trackId}|${JSON.stringify(design.parts)}`;
-  if (benchCache.has(k)) return benchCache.get(k)!;
-  let lap: number | null = null;
-  try {
-    lap = benchLap(computeStats(design), getTrack(trackId)).lap;
-  } catch {
-    lap = null;
-  }
-  if (benchCache.size >= BENCH_CACHE_MAX) benchCache.delete(benchCache.keys().next().value!);
-  benchCache.set(k, lap);
-  return lap;
-}
-
-/** league.ts の hashStr と同じ (ライバルの車の元の形を同じに選ぶ) */
 function hashStr(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
@@ -175,7 +155,7 @@ export async function raceBook(store: LeagueStore, port: LeagueAccountsPort, cfg
     const t = out.get(e.teamId) ?? { id: e.teamId, name, human: !e.rival, cars: [] };
     t.cars.push({ n, driver, grid });
     out.set(e.teamId, t);
-    cars.push({ key: betCarKey(e.teamId, n), team: e.teamId, lap: benchOf(design, track), skill: Math.min(1, skill), grid });
+    cars.push({ key: betCarKey(e.teamId, n), team: e.teamId, lap: cachedBenchLap(design, track, cfg), skill: Math.min(1, skill), grid });
   });
   const ordered = teams.map((t) => out.get(t)!).filter(Boolean);
   for (const t of ordered) t.cars.sort((a, b) => a.n - b.n);

@@ -19,6 +19,7 @@ import {
   taRankOf,
   taWeek,
   taWeekAt,
+  type PartStrength,
   type TaWeek,
 } from "@bpr/shared";
 import { ApiError, parseDesign, type Account, type AccountStore, type SqlRunner, type SqlValue } from "./accounts.ts";
@@ -97,6 +98,8 @@ export interface TaDeps {
   now?: () => number;
   /** マニュアルの速さの上がり分 (AdminConfig.manualSpeedBonus。なし = はじめの値) */
   mtBonus?: () => number;
+  /** 部品の強さの倍率 (AdminConfig をそのまま。なし = 全部 1)。下限と速さの上限がこの倍率の性能で決まる */
+  strength?: () => Readonly<PartStrength> | null;
   /** 走行点を入れる (racepoints.ts の earnTaLap。同じ取りまとめの中で呼ぶ。なし = 入れない) */
   earn?: (accountId: number, improved: boolean, at: number) => { earned: number; left: number; points: number } | null;
 }
@@ -107,9 +110,11 @@ export class TaStore {
   private now: () => number;
   private mtBonus: () => number;
   private earn?: TaDeps["earn"];
+  private strength: () => Readonly<PartStrength> | null;
 
   constructor(deps: TaDeps) {
     this.earn = deps.earn;
+    this.strength = deps.strength ?? (() => null);
     this.sql = deps.sql;
     this.tx = deps.tx;
     this.now = deps.now ?? Date.now;
@@ -250,7 +255,7 @@ export class TaStore {
     // マニュアル (自分で変速) の周: 速さの上限を上がり分だけゆるめ、記録に印を付ける
     const mt = raw.mt === true;
     const track = getTrack(taWeek(weekIndex).trackId);
-    const stats = computeStats(design);
+    const stats = computeStats(design, this.strength());
     return this.tx(() => {
       this.hit(acc.id);
       const why = checkTaSubmission({ lap, pts, design, mt }, stats, track, accounts.inventory(acc.id), this.mtBonus());

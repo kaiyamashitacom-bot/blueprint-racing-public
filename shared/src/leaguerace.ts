@@ -6,7 +6,7 @@
 import { botInput, botStartSetup, updateBotPit, type BotBrain } from "./bot.ts";
 import { bodyOf, pushApart, type Body } from "./collide.ts";
 import { damageCount } from "./damage.ts";
-import { computeStats, type CarDesign, type CarStats } from "./design.ts";
+import { computeStats, type CarDesign, type CarStats, type PartStrength } from "./design.ts";
 import { drsAvailable, openDrs, towFactor, updateDrs } from "./drs.ts";
 import { updateOvertake } from "./overtake.ts";
 import { createCar, stepCar, type CarState } from "./physics.ts";
@@ -67,6 +67,8 @@ export interface HeadlessOptions {
    * 履いたタイヤごとの区間 (stints) を結果に付ける (大会の 画面に送らない組。server/src/season.ts)
    */
   tireKind?: "league" | "tournament";
+  /** 部品の強さの倍率 (AdminConfig をそのまま渡せる。なし = 全部 1) */
+  strength?: Readonly<PartStrength> | null;
 }
 
 export interface HeadlessCarResult {
@@ -162,7 +164,7 @@ export function simulateRace(cars: readonly HeadlessCarSpec[], o: HeadlessOption
   const rules = allocRules(tour ? "tournament" : "league", o.laps);
   const wetMaxFc = forecastWetMax(wet0, forecastAt(weather, 0));
   const runners: Runner[] = cars.map((spec, grid) => {
-    const stats = computeStats(spec.design);
+    const stats = computeStats(spec.design, o.strength);
     const base = botStartSetup(stats, track, o.laps, wet0, wetnessAt(weather, 60), rand, { rules, wetMax: wetMaxFc });
     const setup = spec.setup
       ? { tire: spec.setup.tire, wear: spec.setup.wear, sets: spec.setup.sets, fuel: spec.setup.fuel }

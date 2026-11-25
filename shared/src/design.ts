@@ -1,5 +1,5 @@
 // 車の設計図: マス目に部品を置いたもの。正しいかの確かめと、走りの数 (性能) を出す
-import type { PartDef, PartKind } from "./parts.ts";
+import type { BasePartKind, PartDef, PartKind } from "./parts.ts";
 import { anyPartDef } from "./research.ts";
 import { blendTireMods, traitMods, type TireMods, type TireTrait } from "./tires.ts";
 
@@ -219,8 +219,36 @@ export interface PartSlot {
 
 const cellLf = (r: number) => (GRID_H / 2 - (r + 0.5)) * CELL;
 
-/** 設計図から走りの数を出す。設計図は正しい (validateDesign が空) とする */
-export function computeStats(design: CarDesign): CarStats {
+/**
+ * 部品の強さの倍率 (管理者の数。AdminConfig の partStrength・partKindStrength と同じ名前なので AdminConfig をそのまま渡せる)。
+ * 効くのは部品の主な強さだけ: エンジンの力・タイヤの握り・羽根の押しつけ・ブレーキの強さ・タンクの容量 (満タンの燃料の重さも一緒に変わる)、
+ * 研究の種類 (冷却・電池・ギア箱・サスペンション) は全部の倍率だけ (種類ごとの倍率は無い。上限 DEV_CAPS はそのまま)。
+ * 重さ・羽根の空気の抵抗・運転席・骨組み・重りは変えない。なし・全部 1 = 今までと同じ
+ */
+export interface PartStrength {
+  partStrength: number;
+  partKindStrength: Partial<Record<BasePartKind, number>>;
+}
+
+/** その種類の部品に掛ける倍率 (全部 × 種類。なし = 1) */
+export function partKindMul(s: Readonly<PartStrength> | null | undefined, kind: PartKind): number {
+  if (!s) return 1;
+  const all = Number.isFinite(s.partStrength) && s.partStrength > 0 ? s.partStrength : 1;
+  const k = s.partKindStrength?.[kind as BasePartKind];
+  return all * (typeof k === "number" && Number.isFinite(k) && k > 0 ? k : 1);
+}
+
+/** 倍率が全部 1 か (なしも 1) */
+export function isNeutralStrength(s: Readonly<PartStrength> | null | undefined): boolean {
+  if (!s) return true;
+  // 研究の種類 (冷却) は種類ごとの倍率が無いので、全部の倍率だけ
+  if (partKindMul(s, "cooler") !== 1) return false;
+  return (["seat", "engine", "tire", "tank", "wing", "brake", "frame"] as const).every((k) => partKindMul(s, k) === 1);
+}
+
+/** 設計図から走りの数を出す。設計図は正しい (validateDesign が空) とする。strength = 管理者の部品の強さの倍率 (なし = 1) */
+export function computeStats(design: CarDesign, strength?: Readonly<PartStrength> | null): CarStats {
+  const mul = (kind: PartKind) => partKindMul(strength, kind);
   const occ = occupancy(design);
   let mass = 0;
   let fuelCap = 0;
@@ -247,7 +275,7 @@ export function computeStats(design: CarDesign): CarStats {
   for (const p of design.parts) {
     const def = partDef(p.id)!;
     const cells = placedCells(p);
-    const fuel = def.fuel ?? 0;
+    const fuel = (def.fuel ?? 0) * (def.kind === "tank" ? mul("tank") : 1);
     const m = def.mass + fuel * FUEL_KG;
     let cc = 0;
     let rr = 0;
@@ -266,21 +294,21 @@ export function computeStats(design: CarDesign): CarStats {
     sumR += rr * m;
     fuelCap += fuel;
     if (def.kind === "tire") {
-      grip += def.grip ?? 0;
+      grip += (def.grip ?? 0) * mul("tire");
       tireParts.push(def);
       tireCenters.push({ c: cc, r: rr });
       for (const [c, r] of cells) tireCellSet.add(r * GRID_W + c);
     }
     if (def.kind === "wing") {
-      downforce += def.downforce ?? 0;
+      downforce += (def.downforce ?? 0) * mul("wing");
       wingDrag += def.drag ?? 0;
     }
-    if (def.kind === "brake") brake += def.brake ?? 0;
+    if (def.kind === "brake") brake += (def.brake ?? 0) * mul("brake");
     if (def.kind === "seat") seatR = rr;
-    if (def.kind === "cooler") cool += def.cool ?? 0;
-    if (def.kind === "battery") battery += def.battery ?? 0;
-    if (def.kind === "gearbox") shift = Math.max(shift, def.shift ?? 0);
-    if (def.kind === "susp") suspKeep *= 1 - Math.max(0, Math.min(1, def.susp ?? 0));
+    if (def.kind === "cooler") cool += (def.cool ?? 0) * mul("cooler");
+    if (def.kind === "battery") battery += (def.battery ?? 0) * mul("battery");
+    if (def.kind === "gearbox") shift = Math.max(shift, (def.shift ?? 0) * mul("gearbox"));
+    if (def.kind === "susp") suspKeep *= 1 - Math.max(0, Math.min(1, (def.susp ?? 0) * mul("susp")));
   }
   if (mass <= 0) mass = 1;
   const comC = sumC / mass;
@@ -294,7 +322,8 @@ export function computeStats(design: CarDesign): CarStats {
     if (def.kind !== "engine") return;
     const steps = stepsToTire(occ, placedCells(p), i, tireCellSet);
     const eff = steps < 0 ? 0 : Math.max(0.6, 1 - 0.08 * (steps - 1));
-    power += (def.power ?? 0) * eff;
+    power += (def.power ?? 0) * mul("engine") * eff;
+    // 燃料の食い方は部品の元の力で (強さの倍率で燃費は変えない)
     fuelRate += (def.power ?? 0) * (def.fuelUse ?? 1) * 0.0006;
   });
 
@@ -327,7 +356,7 @@ export function computeStats(design: CarDesign): CarStats {
     const def = partDef(p.id)!;
     if (def.kind !== "engine") return;
     const steps = stepsToTire(occ, placedCells(p), i, tireCellSet);
-    enginePower.set(i, (def.power ?? 0) * (steps < 0 ? 0 : Math.max(0.6, 1 - 0.08 * (steps - 1))));
+    enginePower.set(i, (def.power ?? 0) * mul("engine") * (steps < 0 ? 0 : Math.max(0.6, 1 - 0.08 * (steps - 1))));
   });
   const brakeParts = brake - 4;
   const layout: PartSlot[] = design.parts.map((p, i) => {
@@ -336,10 +365,10 @@ export function computeStats(design: CarDesign): CarStats {
     const lx = (p.c + w / 2 - GRID_W / 2) * CELL;
     const lf = (GRID_H / 2 - (p.r + h / 2)) * CELL;
     let share = 0;
-    if (def.kind === "tire") share = grip > 0 ? (def.grip ?? 0) / grip : 0;
-    else if (def.kind === "wing") share = downforce > 0 ? (def.downforce ?? 0) / downforce : 0;
+    if (def.kind === "tire") share = grip > 0 ? ((def.grip ?? 0) * mul("tire")) / grip : 0;
+    else if (def.kind === "wing") share = downforce > 0 ? ((def.downforce ?? 0) * mul("wing")) / downforce : 0;
     else if (def.kind === "engine") share = power > 0 ? (enginePower.get(i) ?? 0) / power : 0;
-    else if (def.kind === "brake") share = brakeParts > 0 ? (def.brake ?? 0) / brakeParts : 0;
+    else if (def.kind === "brake") share = brakeParts > 0 ? ((def.brake ?? 0) * mul("brake")) / brakeParts : 0;
     const slot: PartSlot = { index: i, id: p.id, kind: def.kind, lx, lf, hx: (w * CELL) / 2, hf: (h * CELL) / 2, mass: def.mass, share };
     if (def.kind === "wing") slot.drag = def.drag ?? 0;
     if (def.sturdy) slot.sturdy = def.sturdy;
@@ -353,7 +382,7 @@ export function computeStats(design: CarDesign): CarStats {
     if (!d.trait || !(grip > 0)) continue;
     const k = `${d.trait}:${d.tier}`;
     const cur = traitShares.get(k) ?? { trait: d.trait, tier: d.tier, share: 0 };
-    cur.share += (d.grip ?? 0) / grip;
+    cur.share += ((d.grip ?? 0) * mul("tire")) / grip;
     traitShares.set(k, cur);
   }
 

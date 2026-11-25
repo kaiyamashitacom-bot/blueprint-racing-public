@@ -31,6 +31,7 @@ import { left } from "./teamkit.ts";
 import { gradeBadge, prizeFrame, prizeLine, resultGifts } from "./tourprize.ts";
 import "./team.css";
 import "./season.css";
+import { partStrength } from "../race_rules.ts";
 
 const DRY: WeatherPlan = { seed: 1, changes: [{ at: 0, sky: "sun" }], fakes: [], startWet: 0 };
 const SKY_JP: Record<string, string> = { sun: "晴れ", light: "小雨", heavy: "大雨" };
@@ -453,7 +454,7 @@ export function mountTournament(root: HTMLElement, go: Go, id?: string): () => v
     const s = load();
     const t = v.tournament;
     const track = getTrack(t.trackId);
-    const stats = computeStats(design);
+    const stats = computeStats(design, partStrength());
     const layer = el("div", { class: "ta-run", style: "position:fixed;inset:0" });
     const raceRoot = el("div");
     layer.append(raceRoot);

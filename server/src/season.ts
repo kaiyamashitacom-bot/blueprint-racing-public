@@ -28,6 +28,7 @@ import {
   cloneAdminConfig,
   closeSeason,
   computeStats,
+  partStrengthOf,
   designFits,
   constructorsByClass,
   constructorsOverall,
@@ -1307,7 +1308,7 @@ export class SeasonStore {
       if (hasLap && pts) {
         const track = getTrack(t.spec.trackId);
         // mt = マニュアルで走った (速さの上限を管理者の上がり分だけゆるめる)
-        const why = checkTaSubmission({ lap, pts, design, mt: b.mt === true }, computeStats(design), track, this.accounts.inventory(acc.id), this.config().manualSpeedBonus);
+        const why = checkTaSubmission({ lap, pts, design, mt: b.mt === true }, computeStats(design, this.config()), track, this.accounts.inventory(acc.id), this.config().manualSpeedBonus);
         if (why) throw new ApiError(400, why);
         const ms = Math.round(lap * 1000);
         if (!best || ms < best.ms) {
@@ -1446,7 +1447,7 @@ export class SeasonStore {
     if (all) {
       const timed = new Set(qualifyingTable(spec, this.attempts(id)).map((r) => r.driverId));
       strength = new Map();
-      for (const [driverId, s] of src) if (!timed.has(driverId)) strength.set(driverId, estimatedLap(s.design, spec.trackId, s.skill));
+      for (const [driverId, s] of src) if (!timed.has(driverId)) strength.set(driverId, estimatedLap(s.design, spec.trackId, s.skill, this.config()));
     }
     // 出ない人 (止めている・退会した・設計図が走れない) の予選の記録は組に入れない
     const { grid } = tournamentGrid(spec, this.attempts(id).filter((x) => src.has(x.driverId)), entrants, Number.MAX_SAFE_INTEGER, strength);
@@ -1476,7 +1477,7 @@ export class SeasonStore {
           const design = s.design;
           let setup: FixedCar["setup"] | undefined;
           if (body) {
-            const stats = computeStats(design);
+            const stats = computeStats(design, this.config());
             const start = body.plan.start && startFromSets(body.q.sets, body.plan.start) ? body.plan.start : defaultStart(body.q);
             const st = start ? raceSetupFromQuali(body.q, start) : null;
             const need = fuelPerMeter(stats) * (spec.laps * track.length + 100) * 1.12 + 1.5;
@@ -1554,7 +1555,7 @@ export class SeasonStore {
           }));
         let seed = 7;
         for (const ch of f.tag) seed = (seed * 31 + ch.charCodeAt(0)) % 2_147_483_647;
-        const sim = simulateRace(specs, { trackId: f.trackId, laps: f.laps, seed, weather: f.weather, tireKind: "tournament" });
+        const sim = simulateRace(specs, { trackId: f.trackId, laps: f.laps, seed, weather: f.weather, tireKind: "tournament", strength: this.config() });
         const byKey = new Map(f.cars.map((c) => [c.key, c]));
         const rows: FixedCarResult[] = sim.results.map((x) => {
           const c = byKey.get(x.id)!;
@@ -2005,7 +2006,7 @@ export interface SeasonApiOpts {
  * GET  /api/season                         季節の順位 (級ごとのチームと運転手、総合のコンストラクターと運転手、前の季節のまとめ)。ログインしていれば自分の様子も
  * GET  /api/season/me                      自分のはんこ帳と季節の記録 (ログインが要る)
  * GET  /api/season/history                 締めた季節のまとめ
- * GET  /api/race-rules                     走りの決まりの数とお知らせ { manualSpeedBonus, announcement } (誰でも)
+ * GET  /api/race-rules                     走りの決まりの数とお知らせ { manualSpeedBonus, announcement, partStrength, partKindStrength, practicePrizePerLap, practicePrizeDailyLaps } (誰でも)
  * GET  /api/tournaments                    大会の一覧
  * GET  /api/tournaments/:id                大会の様子 (予選の表・組・結果・自分のタイヤと予定)
  * POST /api/tournaments/:id/tires          予選のタイヤの組を決める { alloc }
@@ -2032,7 +2033,8 @@ export async function handleSeasonApi(req: Request, path: string, method: string
   // 走りの決まりの数 (誰でも読める): マニュアルの速さの上がり分 (11/25 足した)
   if (path === "/api/race-rules" && M === "GET") {
     const c = season.config();
-    return json({ manualSpeedBonus: c.manualSpeedBonus, announcement: c.announcement });
+    // 部品の強さの倍率 (画面の性能の計算に使う。部屋・リーグ・1 周アタックのサーバーと同じ数に)・練習の賞金 (画面の案内用)
+    return json({ manualSpeedBonus: c.manualSpeedBonus, announcement: c.announcement, ...partStrengthOf(c), practicePrizePerLap: c.practicePrizePerLap, practicePrizeDailyLaps: c.practicePrizeDailyLaps });
   }
   if (path === "/api/season/me" && M === "GET") return json(season.myStamps((await need()).id));
   if (path === "/api/season/history" && M === "GET") return json({ seasons: season.seasonHistory() });

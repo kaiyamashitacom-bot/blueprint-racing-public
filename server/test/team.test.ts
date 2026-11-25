@@ -6,7 +6,7 @@ import { AccountStore, type SqlRunner, type SqlValue } from "../src/accounts.ts"
 import { handleApi } from "../src/api.ts";
 import { TeamStore } from "../src/team.ts";
 
-function makeAll() {
+function makeAll(opts: { feeRate?: () => number } = {}) {
   const db = new DatabaseSync(":memory:");
   const sql: SqlRunner = {
     exec(q: string, ...b: SqlValue[]) {
@@ -29,7 +29,7 @@ function makeAll() {
   const w = seasonWindow(seasonIndexAt(Date.UTC(2026, 11, 3)));
   const clock = { t: w.startsAt + 24 * 3600_000 };
   const store = new AccountStore({ sql, tx, now: () => clock.t, iterations: 1000 });
-  const team = new TeamStore({ sql, tx, now: () => clock.t }, store);
+  const team = new TeamStore({ sql, tx, now: () => clock.t, ...(opts.feeRate ? { marketFeeRate: opts.feeRate } : {}) }, store);
   return { db, store, team, clock };
 }
 
@@ -287,6 +287,22 @@ describe("市場", () => {
     expect(n[0].kind).toBe("market_sold");
     // 売れたあとは買えない
     expect((await b.call("POST", `/api/market/${l.data.id}/buy`)).status).toBe(409);
+  });
+
+  it("手数料は管理者の数 (marketFeeRate): 変えると売れたときの手数料と市場の画面の割合がついてくる", async () => {
+    const cfg = { rate: 0.12 };
+    const all = makeAll({ feeRate: () => cfg.rate });
+    const a = await user(all, 1, 1000);
+    const b = await user(all, 2, 5000);
+    expect((await b.call("GET", "/api/market")).data.feeRate).toBe(0.12);
+    const l = await a.call("POST", "/api/market/list", { item: { type: "part", partId: "tire_n1", count: 1 }, mode: "fixed", price: 1000 });
+    expect((await b.call("POST", `/api/market/${l.data.id}/buy`)).status).toBe(200);
+    expect(money(all, a.id)).toBe(1000 + 1000 - 120);
+    // 途中で変えると 次に売れたときから
+    cfg.rate = 0;
+    const l2 = await a.call("POST", "/api/market/list", { item: { type: "part", partId: "tire_n1", count: 1 }, mode: "fixed", price: 500 });
+    expect((await b.call("POST", `/api/market/${l2.data.id}/buy`)).status).toBe(200);
+    expect(money(all, a.id)).toBe(1880 + 500);
   });
 
   it("競り: 抜かれたらお金が戻って知らせ、締め切りで一番の人に渡る。誰も入れなければ戻る", async () => {

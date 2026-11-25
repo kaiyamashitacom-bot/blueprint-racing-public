@@ -4,7 +4,9 @@ import {
   LOWEST_CLASS,
   QUICK_LAPS,
   RaceRoom,
+  cleanPartStrength,
   isClassId,
+  partStrengthOf,
   isPublicTrackId,
   quickRoomId,
   wetnessAt,
@@ -13,7 +15,9 @@ import {
   type CustomRoomConfig,
   type FixedCarResult,
   type FixedField,
+  type AdminConfig,
   type JoinTeam,
+  type PartStrength,
   type QuickLaps,
   type RaceReport,
   type RoomSnapshot,
@@ -89,6 +93,8 @@ export default {
 const TICK_MS = 50;
 /** レース中の見張りの alarm (刻みが止まっていないか、追い出されていないかを見る) */
 const WATCHDOG_MS = 30_000;
+/** 部品の強さの倍率 (管理者の数) を読み直す間隔 (仮) */
+const STRENGTH_TTL_MS = 60_000;
 
 /** WebSocket ごとに持つもの (眠っても残る)。id は hello が通ってから。cls = すぐ走るの部屋の級 */
 interface SockInfo {
@@ -137,6 +143,8 @@ export class RaceRoomDO extends DurableObject<Env> {
   private roomCls: ClassId | undefined;
   /** 結果が決まったときの、チームごとの 2 台の様子 (onTeamResults から。すぐあとの季節への知らせに使う) */
   private pendingTeam: TeamRaceReport | null = null;
+  /** 部品の強さの倍率 (管理者の数) を読んだ時刻 (STRENGTH_TTL_MS ごとに読み直す) */
+  private strengthAt = 0;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -268,6 +276,22 @@ export class RaceRoomDO extends DurableObject<Env> {
     this.afterEvent();
   }
 
+  /** 部品の強さの倍率 (読めたもの。undefined = まだ読めていない → 部屋の今の値のまま) */
+  private strength: PartStrength | undefined = undefined;
+
+  /** 部品の強さの倍率をアカウントの DO から読む (STRENGTH_TTL_MS の間は読み直さない。読めなければ前の値のまま) */
+  private async loadStrength() {
+    const now = Date.now();
+    if (this.strength !== undefined && now - this.strengthAt < STRENGTH_TTL_MS) return;
+    try {
+      const cfg = (await accounts(this.env).adminConfig()) as unknown as AdminConfig;
+      this.strength = partStrengthOf(cfg);
+      this.strengthAt = now;
+    } catch (e) {
+      console.error("admin config", (e as Error)?.message ?? e);
+    }
+  }
+
   private async hello(ws: WebSocket, hello: Extract<ClientMsg, { t: "hello" }>, laps: number, tour = false, custom = false) {
     // ログインしていれば、アカウントを確かめて運転手名で走る (届かなければ名無しで走る)
     let account: { id: number; driver: string } | null = null;
@@ -290,8 +314,10 @@ export class RaceRoomDO extends DurableObject<Env> {
         console.error("accounts", (e as Error)?.message ?? e);
       }
     }
+    await this.loadStrength();
     if (this.closed.has(ws)) return;
     const room = this.ensureRoom(tour || custom ? undefined : laps);
+    if (room && this.strength !== undefined) room.setPartStrength(this.strength);
     const fail = (msg: string) => {
       safeSend(ws, JSON.stringify({ t: "error", msg } satisfies ServerMsg));
       ws.close(1000, "bad");
@@ -547,9 +573,10 @@ export class RaceRoomDO extends DurableObject<Env> {
    * アカウントの DO から: 大会の組の部屋を開く (待合はスタートまで)。もう開いていれば何もしない (true)。
    * 来た人は WebSocket で /ws?tour=<id>&g=<組> に入る
    */
-  async setupTournament(field: FixedField): Promise<boolean> {
+  async setupTournament(field: FixedField, strength?: PartStrength): Promise<boolean> {
     const room = this.ensureRoom(field.laps)!;
     if (room.isFixed()) return true;
+    if (strength) room.setPartStrength(cleanPartStrength(strength));
     room.setFixed(field, Date.now());
     this.afterEvent();
     return true;
@@ -559,10 +586,11 @@ export class RaceRoomDO extends DurableObject<Env> {
    * アカウントの DO から: 開いた部屋を作る (コース・周回・級・開いた人)。人が入ると待合が始まる。もう作ってあれば何もしない (true)。
    * 来た人は WebSocket で /ws?room=<id> に入る
    */
-  async setupCustom(cfg: CustomRoomConfig): Promise<boolean> {
+  async setupCustom(cfg: CustomRoomConfig, strength?: PartStrength): Promise<boolean> {
     const cur = this.ensureRoom();
     if (cur) return cur.customConfig()?.id === cfg.id;
     const room = this.ensureRoom(cfg.laps)!;
+    if (strength) room.setPartStrength(cleanPartStrength(strength));
     room.setCustom(cfg);
     if (room.customConfig()?.id !== cfg.id) return false;
     this.roomCls = isClassId(cfg.cls) ? cfg.cls : LOWEST_CLASS;

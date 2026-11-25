@@ -97,7 +97,7 @@ import {
 import { drawCarWorld, type Ink } from "../draw.ts";
 import type { Ghost } from "../store.ts";
 import { palette, useManual, type Palette } from "../store.ts";
-import { manualBonus } from "../race_rules.ts";
+import { manualBonus, partStrength } from "../race_rules.ts";
 import { el } from "../ui/dom.ts";
 import { skyLabel, tireBadge } from "../ui/setup.ts";
 import { Controls } from "./input.ts";
@@ -537,7 +537,7 @@ export class RaceView {
       if (info.id === this.o.me?.info.id) continue;
       const cur = this.others.get(info.id);
       if (cur) cur.info = info;
-      else this.others.set(info.id, { info, stats: computeStats(info.design), buf: [], ty: null });
+      else this.others.set(info.id, { info, stats: computeStats(info.design, partStrength()), buf: [], ty: null });
     }
   }
 

@@ -7,6 +7,7 @@ import {
   ADMIN_MUL_MAX,
   ADMIN_MUL_MIN,
   ADMIN_BET_MARGIN_MAX,
+  ADMIN_PRACTICE_LAPS_MAX,
   ADMIN_PRIZE_MAX,
   ADMIN_RP_CAP_MAX,
   ADMIN_RP_MAX,
@@ -125,11 +126,20 @@ export const ADMIN_CONFIG_META: Readonly<Partial<Record<keyof AdminConfig, Admin
   },
   practicePrizePerLap: {
     label: "練習の 1 周の賞金",
-    help: "練習で走った 1 周ごとのお金 (サーバーが確かめた周だけ)",
+    help: "練習で走った 1 周ごとのお金 (ログインしていて、サーバーが確かめた周だけ。晴れでも雨でも)",
     unit: "円",
     group: "prize",
     min: 0,
     max: ADMIN_PRIZE_MAX,
+    int: true,
+  },
+  practicePrizeDailyLaps: {
+    label: "練習の賞金: 1 日の周の上限",
+    help: "練習の賞金を払う周の数の上限 (1 人 1 日、日本時間)。超えた周は 0 円。0 = 練習の賞金なし",
+    unit: "周",
+    group: "prize",
+    min: 0,
+    max: ADMIN_PRACTICE_LAPS_MAX,
     int: true,
   },
   seasonPrize: {
@@ -727,7 +737,11 @@ export function adminPreview(path: string, cfg: Readonly<AdminConfig>): string[]
       return [`大会の 1 位 → ${yen(t[0] ?? 0)} 円・${t.length} 位 → ${yen(t[t.length - 1] ?? 0)} 円 (1 大会の合計 ${yen(t.reduce((s, v) => s + v, 0))} 円)`];
     }
     case "practicePrizePerLap":
-      return [`練習を 10 周 → ${yen(cfg.practicePrizePerLap * 10)} 円`];
+    case "practicePrizeDailyLaps":
+      return [
+        `練習を 10 周 → ${yen(cfg.practicePrizePerLap * Math.min(10, cfg.practicePrizeDailyLaps))} 円`,
+        `1 日の上限 ${cfg.practicePrizeDailyLaps} 周 → ${yen(cfg.practicePrizePerLap * cfg.practicePrizeDailyLaps)} 円まで`,
+      ];
     case "seasonPrize":
     case "seasonPrizeClassMul":
       return [1, 5].map((c) => `${c} 級の 1 位 → ${yen(cfg.seasonPrize[0] ?? 0)} × ${x(cfg.seasonPrizeClassMul[c - 1])} = ${yen(seasonPrizeFor(cfg, c as 1 | 5, 1))} 円`);

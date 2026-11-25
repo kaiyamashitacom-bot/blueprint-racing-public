@@ -16,6 +16,7 @@ import {
   tourBetBook,
   tourBetResult,
   type AdminConfig,
+  type PartStrength,
   type TourBetCar,
   type TourBookCar,
 } from "@bpr/shared";
@@ -55,7 +56,8 @@ interface TourBook {
 const round3 = (x: number) => Math.round(x * 1000) / 1000;
 
 /** 1 大会の倍率の表 (A 組の車)。組が決まっていない・A 組が 2 台に届かなければ null */
-export function tourBook(t: TourRow, margin: number): TourBook | null {
+/** strength = 部品の強さの倍率 (AdminConfig をそのまま。強さの見込みに効く) */
+export function tourBook(t: TourRow, margin: number, strength?: Readonly<PartStrength> | null): TourBook | null {
   const g = t.groups?.[0];
   if (t.status !== "running" || !g || g.cars.length < 2) return null;
   const fixed = t.fields?.[0]?.cars ?? [];
@@ -68,7 +70,7 @@ export function tourBook(t: TourRow, margin: number): TourBook | null {
       const f = fixed.find((x) => x.driverId === c.driverId);
       if (f) {
         const skill = f.driver ? driverTraits(f.driver).skill : STAND_IN_SKILL;
-        const v = estimatedLap(f.design, t.spec.trackId, skill);
+        const v = estimatedLap(f.design, t.spec.trackId, skill, strength);
         est = Number.isFinite(v) ? v : null;
       }
     }
@@ -154,7 +156,7 @@ export async function handleTourBetsApi(req: Request, path: string, method: stri
       reconcileTourBets(season, bets);
       const tours = season
         .toursForBets(now)
-        .map((t) => tourBook(t, cfg.betMargin))
+        .map((t) => tourBook(t, cfg.betMargin, cfg))
         .filter((b): b is TourBook => b !== null)
         .map((b) => view(b, myTeam, now));
       // これから組の決まる大会 (賭けはスタートの LOBBY_LEAD_MS 前から)
@@ -184,7 +186,7 @@ export async function handleTourBetsApi(req: Request, path: string, method: stri
       if (!t || t.status === "cancelled") return json({ error: "その大会はありません" }, 404);
       if (t.status === "open") return json({ error: `賭けは組が決まってから (スタートの ${Math.round(LOBBY_LEAD_MS / 60_000)} 分前から) です` }, 409);
       if (t.status !== "running" || now >= t.spec.startsAt) return json({ error: "この大会はもう締め切りました" }, 409);
-      const book = tourBook(t, cfg.betMargin);
+      const book = tourBook(t, cfg.betMargin, cfg);
       if (!book) return json({ error: "この大会は賭けを受けていません" }, 409);
       if (book.teams.includes(myTeam)) return json({ error: "自分のチームが A 組 (優勝を決める組) にいる大会には賭けられません" }, 403);
       const slot = typeof b.car === "string" && /^\d{1,2}$/.test(b.car) ? Number(b.car) : -1;

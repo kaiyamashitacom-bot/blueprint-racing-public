@@ -293,21 +293,31 @@ export interface TeamDeps {
   sql: SqlRunner;
   tx<T>(fn: () => T): T;
   now?: () => number;
+  /** 市場の手数料の割合 (AdminConfig.marketFeeRate。なし = MARKET.feeRate) */
+  marketFeeRate?: () => number;
 }
 
 export class TeamStore {
   private sql: SqlRunner;
   private tx: <T>(fn: () => T) => T;
   readonly now: () => number;
+  private feeRateOf: () => number;
 
   constructor(
     deps: TeamDeps,
     private accounts: AccountStore,
   ) {
+    this.feeRateOf = deps.marketFeeRate ?? (() => MARKET.feeRate);
     this.sql = deps.sql;
     this.tx = deps.tx;
     this.now = deps.now ?? Date.now;
     for (const stmt of SCHEMA.split(";")) if (stmt.trim()) this.sql.exec(stmt);
+  }
+
+  /** 今の市場の手数料の割合 (管理者の数。読めない・幅の外なら MARKET.feeRate) */
+  feeRate(): number {
+    const r = this.feeRateOf();
+    return Number.isFinite(r) && r >= 0 && r <= 1 ? r : MARKET.feeRate;
   }
 
   private rows(q: string, ...b: SqlValue[]) {
@@ -618,7 +628,7 @@ export class TeamStore {
   /** 締め切りの来た出品を決着させる */
   private settle(now: number) {
     const m = this.market();
-    const out = settleMarket(m, now, MARKET.feeRate);
+    const out = settleMarket(m, now, this.feeRate());
     if (out.market === m) return;
     this.applyMoney(out.moves, false);
     this.applyItems(out.items, false);
@@ -1214,7 +1224,7 @@ export class TeamStore {
         now,
         money: this.money(acc.id),
         held: heldInBids(m, me),
-        feeRate: MARKET.feeRate,
+        feeRate: this.feeRate(),
         listings: open.map((l) => this.listingView(l, me, names, now)).sort((a, b) => a.endsAt - b.endsAt),
         mine: mine.map((l) => this.listingView(l, me, names, now)).sort((a, b) => b.endsAt - a.endsAt),
         supplies,
@@ -1264,7 +1274,7 @@ export class TeamStore {
       const m = this.market();
       const l = m.listings.find((x) => x.id === listingId);
       if (l?.item.type === "design" && this.designCount(acc.id) >= MAX_DESIGNS) throw new ApiError(400, `設計図は ${MAX_DESIGNS} 個までです`);
-      const r = buyNow(m, listingId, me, this.money(acc.id), now, MARKET.feeRate);
+      const r = buyNow(m, listingId, me, this.money(acc.id), now, this.feeRate());
       if (!r.ok) econFail(r.error);
       this.applyMoney(r.moves);
       this.applyItems(r.items);
@@ -1334,7 +1344,7 @@ export class TeamStore {
       const s = m.supplies.find((x) => x.id === contractId);
       if (!s) econFail("not_found");
       if (!this.exists(aid(s.supplierId))) econFail("closed");
-      const r = orderSupply(m, contractId, tid(acc.id), Number(count), this.money(acc.id), this.money(aid(s.supplierId)), now, MARKET.feeRate);
+      const r = orderSupply(m, contractId, tid(acc.id), Number(count), this.money(acc.id), this.money(aid(s.supplierId)), now, this.feeRate());
       if (!r.ok) econFail(r.error);
       this.applyMoney(r.moves);
       this.applyItems(r.items);

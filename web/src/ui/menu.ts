@@ -6,7 +6,7 @@ import { drawCarShowcase, drawTrackCard } from "../draw.ts";
 import { cachedMe, isLoggedIn, refreshAccount } from "../api.ts";
 import type { Go } from "../main.ts";
 import { load, palette, save } from "../store.ts";
-import { manualBonus } from "../race_rules.ts";
+import { manualBonus, partStrength } from "../race_rules.ts";
 import { el, fitCanvas } from "./dom.ts";
 import { taMenuSection } from "./timeattack.ts";
 import { teamMenuRow } from "./team.ts";
@@ -311,7 +311,7 @@ export function mountMenu(root: HTMLElement, go: Go): () => void {
 
     // 数字の札
     stats.innerHTML = "";
-    const st = d && !errs.length ? computeStats(d) : null;
+    const st = d && !errs.length ? computeStats(d, partStrength()) : null;
     stats.classList.toggle("empty", !st);
     for (const [k, v, unit] of [
       ["重さ", st ? String(Math.round(st.mass)) : "—", "kg"],

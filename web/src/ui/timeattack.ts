@@ -30,6 +30,7 @@ import { fetchTaBoard, fetchTaGhosts, loadLocalTa, saveLocalTa, submitTaLap, taR
 import { el, fitCanvas, transTag } from "./dom.ts";
 import { quickLightsClock } from "./lights.ts";
 import "./timeattack.css";
+import { partStrength } from "../race_rules.ts";
 
 /** 一緒に走れる幽霊の数 */
 const MAX_GHOSTS = 3;
@@ -328,7 +329,7 @@ export function mountTimeAttack(root: HTMLElement, go: Go): () => void {
   function startRun(design: CarDesign) {
     if (validateDesign(design).length) return;
     const track = getTrack(week.trackId);
-    const stats = computeStats(design);
+    const stats = computeStats(design, partStrength());
     const runWeek = week.index;
     const me = cachedMe();
     const canSend = isLoggedIn() && !(ownedParts() && checkTaDesign(design, ownedParts()));

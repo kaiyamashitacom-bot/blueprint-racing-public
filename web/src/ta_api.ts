@@ -90,6 +90,25 @@ export function submitTaLap(week: number, ghost: Ghost, design: CarDesign, mt = 
   });
 }
 
+/** 練習の賞金の返事 (server/src/practice.ts の PracticeLapRes) */
+export interface PracticeLapRes {
+  earned: number;
+  left: number;
+  money: number;
+}
+
+/** 練習の 1 周を送る (ログインが要る)。サーバーが 1 周アタックと同じ確かめをして、1 日の上限まで賞金を払う */
+export function submitPracticeLap(trackId: string, ghost: Ghost, design: CarDesign, mt = false): Promise<PracticeLapRes> {
+  return call<PracticeLapRes>("POST", "/api/practice/lap", {
+    ...(mt ? { mt: true } : {}),
+    trackId,
+    lap: ghost.lap,
+    ghost: encodeGhost(ghost.pts),
+    design: { name: design.name, parts: design.parts },
+    designHash: designHash(design),
+  });
+}
+
 // ---- この機械の記録 (週ごとの自分の一番速い周と幽霊、選んだ幽霊) ----
 
 interface LocalTa {

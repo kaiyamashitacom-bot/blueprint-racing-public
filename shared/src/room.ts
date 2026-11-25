@@ -8,7 +8,7 @@ import { bodyOf, pushApart, type Body } from "./collide.ts";
 import { damageCount, packDamage, readDamage } from "./damage.ts";
 import { drsAvailable, newDrsState, openDrs, towFactor, updateDrs } from "./drs.ts";
 import { newOvertakeState, updateOvertake } from "./overtake.ts";
-import { computeStats, validateDesign, type CarDesign, type CarStats } from "./design.ts";
+import { computeStats, isNeutralStrength, validateDesign, type CarDesign, type CarStats, type PartStrength } from "./design.ts";
 import { createCar, DT, type CarState } from "./physics.ts";
 import { stepCar } from "./physics.ts";
 import { BOT_DESIGNS, BOT_NAMES } from "./presets.ts";
@@ -261,6 +261,8 @@ export class RaceRoom {
   private maxWet = 0;
   /** 開いた部屋 (null = すぐ走るの部屋か大会の組) */
   private custom: CustomRoomConfig | null = null;
+  /** 部品の強さの倍率 (管理者の数。サーバーが setPartStrength で入れる。null = 全部 1) */
+  private strength: PartStrength | null = null;
 
   constructor(
     private io: RoomIO,
@@ -269,6 +271,19 @@ export class RaceRoom {
     private trackIds: string[] = TRACK_DEFS.map((d) => d.id),
   ) {
     this.trackId = trackIds[0];
+  }
+
+  /**
+   * 部品の強さの倍率 (AdminConfig.partStrength・partKindStrength) を入れる。これから作る車の性能に効く
+   * (レースの途中の車は変えない。待合の人は次に入り直したときかスタートの並びで)
+   */
+  setPartStrength(s: PartStrength | null) {
+    this.strength = s && !isNeutralStrength(s) ? { partStrength: s.partStrength, partKindStrength: { ...s.partKindStrength } } : null;
+  }
+
+  /** 設計図の性能 (部品の強さの倍率を込み) */
+  statsOf(design: CarDesign): CarStats {
+    return computeStats(design, this.strength);
   }
 
   info(): PhaseInfo {
@@ -322,7 +337,7 @@ export class RaceRoom {
         else if (team === null) delete e.team;
         if (this.phase !== "race") {
           e.design = design;
-          e.stats = computeStats(design);
+          e.stats = this.statsOf(design);
         }
         onId(e.id);
         this.welcome(e, now);
@@ -359,7 +374,7 @@ export class RaceRoom {
     if (this.fixed) return { ok: false, reason: "bad", msg: this.phase === "idle" || this.phase === "results" ? "この組のレースは終わりました" : "この組の出場者ではありません" };
     if (this.humans() >= MAX_CARS) return { ok: false, reason: "full", msg: "満員です" };
     const id = `p${this.nextId++}`;
-    const stats = computeStats(design);
+    const stats = this.statsOf(design);
     const track = getTrack(this.trackId);
     const e: Entrant = {
       id,
@@ -619,7 +634,7 @@ export class RaceRoom {
     this.chequeredAt = 0;
     const track = getTrack(field.trackId);
     field.cars.forEach((c, i) => {
-      const stats = computeStats(c.design);
+      const stats = this.statsOf(c.design);
       // id は並べた順で決める (眠ったあとに戻しても WebSocket と結びつく)
       const id = `f${i}`;
       const human = c.kind === "human";
@@ -762,7 +777,7 @@ export class RaceRoom {
       const sec = h.team?.second;
       if (!sec || k0 >= MAX_CARS || validateDesign(sec.design).length) continue;
       const slot = grid[k0++];
-      const stats = computeStats(sec.design);
+      const stats = this.statsOf(sec.design);
       let name = cleanName(sec.name);
       if (used.has(name)) name = `${name.slice(0, 10)} 2`;
       used.add(name);
@@ -804,7 +819,7 @@ export class RaceRoom {
     for (let k = k0; k < MAX_CARS; k++) {
       const slot = grid[k];
       const design = BOT_DESIGNS[Math.floor(this.rand() * BOT_DESIGNS.length)];
-      const stats = computeStats(design);
+      const stats = this.statsOf(design);
       let name = BOT_NAMES[Math.floor(this.rand() * BOT_NAMES.length)];
       while (used.has(name)) name = BOT_NAMES[Math.floor(this.rand() * BOT_NAMES.length)];
       used.add(name);
@@ -1247,6 +1262,7 @@ export class RaceRoom {
       weather: this.weather,
       ...(this.fixed ? { fixed: this.fixed } : {}),
       ...(this.custom ? { custom: { ...this.custom } } : {}),
+      ...(this.strength ? { strength: this.strength } : {}),
       entrants: [...this.entrants.values()].map((e) => ({
         id: e.id,
         key: e.key,
@@ -1274,6 +1290,7 @@ export class RaceRoom {
     trackIds: string[] = TRACK_DEFS.map((d) => d.id),
   ): RaceRoom {
     const room = new RaceRoom(io, data.laps, rand, data.custom ? [data.custom.trackId] : trackIds);
+    if (data.strength) room.setPartStrength(data.strength);
     if (data.custom) {
       room.custom = { ...data.custom };
       if (data.custom.trackDef && data.custom.trackDef.id === data.custom.trackId) registerTrackDef(data.custom.trackDef);
@@ -1304,7 +1321,7 @@ export class RaceRoom {
     }
     const track = getTrack(room.trackId);
     for (const s of data.entrants) {
-      const stats = computeStats(s.design);
+      const stats = room.statsOf(s.design);
       room.entrants.set(s.id, {
         ...s,
         stats,
@@ -1347,6 +1364,8 @@ export interface RoomSnapshot {
   fixed?: FixedField;
   /** 開いた部屋 */
   custom?: CustomRoomConfig;
+  /** 部品の強さの倍率 (全部 1 なら無し) */
+  strength?: PartStrength;
   entrants: Array<{ id: string; key: string; name: string; design: CarDesign; bot: boolean; connected: boolean; waiting: boolean; color: string; slot: number; team?: JoinTeam }>;
 }
 

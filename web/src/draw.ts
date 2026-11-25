@@ -2,6 +2,7 @@
 // 見た目は F1 中継風: 部品は種類ごとの色の札、車は車の色で塗った車体 (塗り分け) にくっきりした縁
 import { CELL, GRID_H, GRID_W, anyPartDef as partDef, computeStats, placedSize, type CarDesign, type PartDef, type PartKind } from "@bpr/shared";
 import type { Palette } from "./store.ts";
+import { partStrength } from "./race_rules.ts";
 
 export interface Ink {
   line: string;
@@ -687,7 +688,7 @@ export function drawCarShowcase(ctx: CanvasRenderingContext2D, design: CarDesign
   ctx.fillRect(b.c0 * cell + 6, b.r0 * cell + 12, cols * cell, rows * cell);
   ctx.restore();
   drawCarLivery(ctx, design, cell, { body: p.accent, dark: "#07080b", trim: p.ink }, Math.max(1.2, cell / 22));
-  const st = computeStats(design);
+  const st = computeStats(design, partStrength());
   drawComMarker(ctx, st.comC * cell, st.comR * cell, Math.max(7, cell * 0.24), p, "重心");
   ctx.restore();
 

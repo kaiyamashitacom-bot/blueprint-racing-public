@@ -6,6 +6,7 @@ import { MARKET } from "./market.ts";
 import { lapsFactor, PRIZE_CPU_ONLY_RATE, PRIZE_FINISH, PRIZE_PER_POINT } from "./money.ts";
 import { DIVISION_COUNT } from "./league.ts";
 import { BASE_PART_KINDS, type BasePartKind, type PartKind } from "./parts.ts";
+import type { PartStrength } from "./design.ts";
 import { MAX_CARS } from "./room.ts";
 import { DEFAULT_SEASON_RULES, type ClassId, type RaceKind, type SeasonRules } from "./season.ts";
 
@@ -28,6 +29,8 @@ export interface AdminConfig {
   leaguePrizeDivisionMul: number[];
   /** 練習の賞金 (サーバーが確かめた 1 周ごと) */
   practicePrizePerLap: number;
+  /** 練習の賞金の 1 日 (日本時間) の周の上限 (これを超えた周は確かめるが払わない) */
+  practicePrizeDailyLaps: number;
   /** コンストラクター (チームのチャンピオン) の点: リーグ戦の点に掛ける重み (全部の部に共通) */
   constructorLeagueWeight: number;
   /** コンストラクターの点: リーグ戦の部ごとの倍率 (1 部から 8 部)。上の部で取った点ほど重い */
@@ -121,6 +124,7 @@ export const DEFAULT_ADMIN_CONFIG: Readonly<AdminConfig> = {
   leaguePrize: [300, 150],
   leaguePrizeDivisionMul: [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7],
   practicePrizePerLap: 5,
+  practicePrizeDailyLaps: 20,
   constructorLeagueWeight: 0.1,
   constructorDivisionMul: [2, 1.7, 1.4, 1.2, 1, 0.75, 0.5, 0.3],
   constructorPrize: 5000,
@@ -171,6 +175,8 @@ export const ADMIN_PRIZE_MAX = 10_000_000;
 /** 走行点の 1 回の点の上限・1 日の上限の上限 (仮) */
 export const ADMIN_RP_MAX = 1000;
 export const ADMIN_RP_CAP_MAX = 100_000;
+/** 練習の賞金の 1 日の周の上限の上限 (仮) */
+export const ADMIN_PRACTICE_LAPS_MAX = 1000;
 /** 賭けの胴元の取り分の上限 (仮) */
 export const ADMIN_BET_MARGIN_MAX = 0.5;
 
@@ -228,6 +234,7 @@ export function validateAdminConfig(x: unknown): AdminConfigCheck {
   if (!num(x.driverChampionPrize, 0, 1e9)) errors.push("driverChampionPrize");
   if (!num(x.driverOverallPrize, 0, 1e9)) errors.push("driverOverallPrize");
   if (!prize(x.practicePrizePerLap)) errors.push("practicePrizePerLap");
+  if (!(num(x.practicePrizeDailyLaps, 0, ADMIN_PRACTICE_LAPS_MAX) && Number.isInteger(x.practicePrizeDailyLaps))) errors.push("practicePrizeDailyLaps");
   const s = x.season;
   if (!(isObj(s) && num(s.everydayMul, 0, 100) && num(s.tournamentMul, 0, 100) && num(s.cpuOnlyMul, 0, 1))) errors.push("season");
   if (!num(x.partStrength, ADMIN_MUL_MIN, ADMIN_MUL_MAX)) errors.push("partStrength");
@@ -320,4 +327,19 @@ export function marketFeeFor(cfg: Readonly<AdminConfig>, price: number): number 
 /** 部品の強さの倍率 (全部 × 種類) */
 export function partStrengthFor(cfg: Readonly<AdminConfig>, kind: PartKind): number {
   return cfg.partStrength * (cfg.partKindStrength[kind as BasePartKind] ?? 1);
+}
+
+/** 部品の強さの倍率だけを取り出す (computeStats に渡す・/api/race-rules で配る・部屋の snapshot に残す) */
+export function partStrengthOf(cfg: Readonly<Pick<AdminConfig, "partStrength" | "partKindStrength">>): PartStrength {
+  return { partStrength: cfg.partStrength, partKindStrength: { ...cfg.partKindStrength } };
+}
+
+/** 送られてきた部品の強さの倍率を確かめる (画面が /api/race-rules から読むとき・部屋を戻すとき)。幅の外や読めない数は 1 */
+export function cleanPartStrength(v: unknown): PartStrength {
+  const ok = (x: unknown): x is number => num(x, ADMIN_MUL_MIN, ADMIN_MUL_MAX);
+  const o = isObj(v) ? v : {};
+  const k = isObj(o.partKindStrength) ? o.partKindStrength : {};
+  const kinds = {} as Record<BasePartKind, number>;
+  for (const p of PART_KINDS) kinds[p] = ok(k[p]) ? k[p] : 1;
+  return { partStrength: ok(o.partStrength) ? o.partStrength : 1, partKindStrength: kinds };
 }

@@ -55,10 +55,12 @@ import {
   SCHEDULED_EVERY_MS,
   SCHEDULED_LAPS,
   seasonIndexAt,
+  partStrengthOf,
   simulateRace,
   STAND_IN_SKILL,
   TRACK_DEFS,
   type AdminConfig,
+  type PartStrength,
   type BetResultCar,
   type ConstructorLeagueAcc,
   type FamiliarityMap,
@@ -482,6 +484,14 @@ export class LeagueStore {
     } catch (e) {
       console.error("league teams", (e as Error)?.message ?? e);
     }
+    // 部品の強さの倍率 (管理者の数)。読めなければ全部 1 で
+    let strength: PartStrength | null = null;
+    try {
+      const cfg = await this.port.adminConfig();
+      if (cfg) strength = partStrengthOf(cfg);
+    } catch (e) {
+      console.error("league admin config", (e as Error)?.message ?? e);
+    }
     return this.tx(() => {
       // 待っている間に変わっていても、今の様子で計算する
       const st = this.state(now);
@@ -496,7 +506,7 @@ export class LeagueStore {
         return { kind: "race" as const, raceId: head.raceId, status: "not_computed" as const };
       }
       try {
-        this.runRace(head, lg, st, data, now);
+        this.runRace(head, lg, st, data, now, strength);
       } catch (e) {
         console.error("league race", head.raceId, (e as Error)?.message ?? e);
         return this.retryHead(qq, st);
@@ -577,7 +587,7 @@ export class LeagueStore {
   }
 
   /** 1 レースを計算して残す (取りまとめの中で呼ぶ) */
-  private runRace(head: QueuedRace, league: League, state: LeagueState, data: readonly LeagueTeamData[], now: number) {
+  private runRace(head: QueuedRace, league: League, state: LeagueState, data: readonly LeagueTeamData[], now: number, strength: PartStrength | null = null) {
     const byTeam = new Map(data.map((d) => [d.teamId, d]));
     const humans = league.humans.filter((h) => byTeam.has(h));
     for (const d of data) this.setTeamName(d.teamId, d.name);
@@ -621,7 +631,7 @@ export class LeagueStore {
         meta.set(e.driverId, { teamId: d.teamId, team: d.name, driver: "代走 CPU", kind: "cpu", human: true });
       }
     }
-    const sim = simulateRace(specs, { trackId: track, laps: head.laps, seed: head.seed });
+    const sim = simulateRace(specs, { trackId: track, laps: head.laps, seed: head.seed, strength });
     const cars: LeagueRaceCar[] = sim.results.map((r) => {
       const m = meta.get(r.id)!;
       return {
