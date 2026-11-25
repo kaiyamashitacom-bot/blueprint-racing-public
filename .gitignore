@@ -4,3 +4,4 @@ dist/
 .DS_Store
 .dev.vars
 media/
+scripts/publish-private-patterns.txt
