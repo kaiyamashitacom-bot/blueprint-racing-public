@@ -10,7 +10,7 @@ set -euo pipefail
 PUBLIC_URL="https://github.com/kaiyamashitacom-bot/blueprint-racing-public.git"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SHA="$(git -C "$ROOT" rev-parse --short HEAD)"
-SUBJECT="$(git -C "$ROOT" log -1 --format=%s | cut -c1-120)"
+SUBJECT="$(git -C "$ROOT" log -1 --format=%s | perl -CS -pe 's/^(.{0,100}).*/$1/')" # 文字の途中で切らない
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
