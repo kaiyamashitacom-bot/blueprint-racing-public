@@ -1,0 +1,465 @@
+/* 賭けの画面 (F1 中継風)。色と字体は style.css・account.css・team.css の :root と .tm-num を使う。
+   チームの色は 4 つ (レースの中のチームの番号ごと)、当たりは --good、外れは --ink-dim、返しは --warn */
+.bt {
+  --bt-t0: #ff2b3a;
+  --bt-t1: #2ec5ff;
+  --bt-t2: #ffd21f;
+  --bt-t3: #b45cff;
+  max-width: 900px;
+}
+.bt-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.bt-view,
+.bt-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.bt-nav {
+  margin: 0;
+}
+.bt-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+/* ---- 手元のお金 ---- */
+.bt-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+  align-items: end;
+}
+.bt-cash {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.bt-cash b {
+  font-size: 32px;
+  line-height: 1;
+}
+.bt-cash small {
+  color: var(--ink-dim);
+  font-size: 12px;
+}
+.bt-rule {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-line);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+/* ---- 時刻の札 ---- */
+.bt-slots {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.bt-slot {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 6px 12px;
+  min-width: 86px;
+  border-radius: 0;
+  border-left: 3px solid var(--panel-line);
+}
+.bt-slot b {
+  font-size: 20px;
+  line-height: 1.1;
+}
+.bt-slot small {
+  font-size: 11px;
+  color: var(--ink-dim);
+  font-weight: 600;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bt-slot.on {
+  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--paper-3) 60%, var(--accent) 14%);
+}
+.bt-slot.closed b {
+  color: var(--ink-dim);
+}
+.bt-slothead .section-title {
+  margin-bottom: 4px;
+}
+.bt-close {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--warn);
+}
+.bt-close.shut {
+  color: var(--ink-dim);
+}
+
+/* ---- レース ---- */
+.bt-race {
+  padding: 0;
+}
+.bt-race-head {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  padding: 12px 16px 12px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+.bt-race-head:disabled {
+  opacity: 1;
+}
+.bt-lg {
+  font-size: 18px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.bt-teams {
+  font-size: 13px;
+  color: var(--ink-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bt-open,
+.bt-tag {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.bt-open {
+  background: var(--ink);
+  color: var(--paper);
+}
+.bt-tag {
+  border: 1px solid var(--panel-line);
+  color: var(--ink-dim);
+}
+.bt-race.mine .bt-note {
+  margin: 0;
+  padding: 0 16px 12px 20px;
+}
+.bt-detail:empty {
+  display: none;
+}
+.bt-detail {
+  padding: 0 16px 16px 20px;
+}
+.bt-meta {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin-bottom: 8px;
+}
+
+/* 賭け方の切りかえ */
+.bt-seg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-bottom: 8px;
+  border: 1px solid var(--panel-line);
+}
+.bt-seg button {
+  border: none;
+  border-radius: 0;
+  padding: 8px 4px;
+  font-size: 14px;
+  background: transparent;
+  color: var(--ink-dim);
+}
+.bt-seg button.on {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* 車の列 (並び・運転手・倍率) */
+.bt-list {
+  display: flex;
+  flex-direction: column;
+}
+.bt-hint {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+.bt-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 76px;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 0 5px 8px;
+  border-bottom: 1px solid var(--ink-ghost);
+  border-left: 3px solid transparent;
+}
+.bt-row.head {
+  font-size: 11px;
+  color: var(--ink-dim);
+  font-weight: 700;
+  border-bottom-color: var(--panel-line);
+}
+.bt-row.head .n {
+  text-align: center;
+}
+.bt-row.t0 {
+  border-left-color: var(--bt-t0);
+}
+.bt-row.t1 {
+  border-left-color: var(--bt-t1);
+}
+.bt-row.t2 {
+  border-left-color: var(--bt-t2);
+}
+.bt-row.t3 {
+  border-left-color: var(--bt-t3);
+}
+.bt-row .grid {
+  font-size: 16px;
+  color: var(--ink-dim);
+}
+.bt-row .who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.bt-row .who b,
+.bt-row .who small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bt-row .who small {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.bt-odds {
+  font-size: 18px;
+  padding: 4px 6px;
+  min-height: 38px;
+  border-radius: 0;
+  background: var(--paper-3);
+}
+.bt-odds.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* 2 チームの順番 */
+.bt-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px auto 64px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--ink-ghost);
+}
+.bt-pn {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bt-pn.b {
+  text-align: right;
+}
+.bt-vs {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+/* 賭け札 */
+.bt-slip {
+  margin-top: 10px;
+}
+.bt-slip-pick {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 8px 10px;
+  border-left: 3px solid var(--accent);
+  background: var(--ink-ghost);
+}
+.bt-slip-pick b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bt-x {
+  font-size: 20px;
+  font-weight: 700;
+}
+.bt-slip-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+.bt-stake {
+  width: 100%;
+  font-size: 22px;
+  padding: 6px 10px;
+}
+.bt-ret {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+}
+.bt-ret b {
+  font-size: 22px;
+  color: var(--good);
+}
+.bt-ret small {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.bt-quick {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.bt-go {
+  width: 100%;
+  margin-top: 10px;
+  font-size: 16px;
+  padding: 10px;
+}
+
+/* ---- 結果待ち・記録 ---- */
+.bt-bet {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "st what pay"
+    "st amt pay";
+  gap: 0 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--ink-ghost);
+}
+.bt-st {
+  grid-area: st;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  padding: 3px 0;
+  border: 1px solid var(--panel-line);
+}
+.bt-st.won {
+  background: var(--good);
+  border-color: var(--good);
+  color: #04130a;
+}
+.bt-st.void {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.bt-st.lost {
+  color: var(--ink-dim);
+}
+.bt-what {
+  grid-area: what;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.bt-what b,
+.bt-what small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bt-what b {
+  font-size: 14px;
+}
+.bt-what small {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.bt-amt {
+  grid-area: amt;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+.bt-pay {
+  grid-area: pay;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: right;
+}
+.bt-pay small {
+  font-size: 11px;
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+.bt-pay.won {
+  color: var(--good);
+}
+.bt-pay.lost {
+  color: var(--ink-dim);
+}
+.bt-pay.void {
+  color: var(--warn);
+}
+.bt-sum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: baseline;
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+.bt-sum b {
+  font-size: 22px;
+  margin-left: auto;
+}
+.bt-sum b.up {
+  color: var(--good);
+}
+.bt-sum b.down {
+  color: var(--bad);
+}
+
+@media (max-width: 420px) {
+  .bt-cash b {
+    font-size: 26px;
+  }
+  .bt-race-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .bt-race-head .bt-open,
+  .bt-race-head .bt-tag {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .bt-pair {
+    grid-template-columns: minmax(0, 1fr) 58px 58px minmax(0, 1fr);
+  }
+  .bt-vs {
+    display: none;
+  }
+}

@@ -1,0 +1,597 @@
+/* コースづくりの画面 (.ed の中だけ) — F1 中継風。色と字体は style.css の :root を使う。
+   スマホ縦: 見出し → 名前 → 道具の帯 (3 × 2) → 絵 → 板。スマホ横: 絵を左いっぱい、板を右で巻き取り。Mac: 絵を左、板を右 */
+.ed {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 見出し: もどる・題・コースを選ぶ */
+.ed-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ed-title {
+  margin: 0;
+  flex: 1;
+  min-width: 9em;
+  font-family: var(--f-head);
+  font-size: clamp(22px, 5.6vw, 32px);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ed-title small {
+  font-style: normal;
+}
+.ed-pickrow {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+.ed-pick {
+  max-width: 100%;
+  min-width: 0;
+  font-weight: 700;
+}
+
+/* 名前の帯: 左に赤い帯 */
+.ed-namebar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 14px;
+  background: var(--paper-2);
+  border: 1px solid var(--panel-line);
+  border-left: none;
+}
+.ed-namebar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--accent);
+}
+.ed-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 800;
+  font-size: 17px;
+  background: transparent;
+  border-color: transparent;
+}
+.ed-name:focus {
+  background: rgba(0, 0, 0, 0.28);
+}
+.ed-saved {
+  font-family: var(--f-num);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--good);
+  white-space: nowrap;
+}
+
+/* 道具の帯 (中継のタブ) */
+.ed-modes {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-bottom: 2px solid var(--panel-line);
+}
+.ed-modes button {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  margin-bottom: -2px;
+  padding: 8px 4px;
+  color: var(--ink-dim);
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.ed-modes button:hover {
+  background: var(--ink-ghost);
+  color: var(--ink);
+}
+.ed-modes button.on {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+  background: linear-gradient(0deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 80%);
+}
+
+.ed-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 絵 */
+.ed-stage {
+  position: relative;
+  border: 1px solid var(--panel-line);
+  overflow: hidden;
+  min-width: 0;
+  background: #090b0f;
+}
+.ed-canvas {
+  display: block;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: crosshair;
+}
+/* 案内: 左上の中継の札 */
+.ed-hint {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  max-width: min(520px, calc(100% - 16px));
+  padding: 5px 10px 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink-2);
+  background: rgba(9, 11, 15, 0.82);
+  border-left: 3px solid var(--accent-2);
+  pointer-events: none;
+}
+.ed-zoom {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  gap: 4px;
+}
+.ed-zoom button {
+  min-width: 44px;
+  min-height: 44px;
+  font-family: var(--f-num);
+  font-size: 18px;
+  background: rgba(20, 23, 31, 0.9);
+}
+.ed-toast {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%) skewX(-8deg);
+  max-width: calc(100% - 32px);
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 8px 16px;
+  font-weight: 800;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.ed-toast.on {
+  opacity: 1;
+}
+
+/* 板 */
+.ed-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.ed-box {
+  position: relative;
+  border: 1px solid var(--panel-line);
+  border-left: none;
+  padding: 12px 14px 14px 18px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--paper-2) 92%, #fff 3%), var(--paper-2));
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+.ed-box::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--accent);
+}
+.ed-box[hidden] {
+  display: none;
+}
+.ed-box-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--panel-line);
+}
+.ed-box-head h3 {
+  font-size: 16px;
+  font-weight: 900;
+}
+.ed-box-head .label {
+  margin-left: auto;
+}
+.ed-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.ed-row:first-of-type {
+  margin-top: 0;
+}
+.ed-row button.small,
+.ed-seg button.small,
+.ed-list button.small {
+  min-height: 40px;
+}
+.ed-pt[hidden],
+.ed-row button[hidden] {
+  display: none;
+}
+.ed-sliders label,
+.ed-line {
+  display: grid;
+  grid-template-columns: 4.6em 5.6em minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.ed-line {
+  grid-template-columns: 4.6em minmax(0, 1fr);
+}
+.ed-sliders .num {
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ed-sliders input[type="range"] {
+  width: 100%;
+  min-height: 32px;
+}
+.ed-sliders select {
+  min-width: 0;
+}
+/* 2〜3 つから選ぶ (縁石・ピットの側) */
+.ed-seg {
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--panel-line);
+  padding: 2px;
+  gap: 2px;
+  justify-self: start;
+}
+.ed-seg button {
+  border: none;
+  background: transparent;
+  color: var(--ink-dim);
+  min-width: 56px;
+}
+.ed-seg button.on {
+  background: var(--ink);
+  color: var(--paper);
+}
+.ed-note {
+  font-size: 12px;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.ed-info {
+  font-size: 14px;
+}
+.ed-info .num {
+  font-size: 18px;
+  font-weight: 700;
+}
+.ed-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.ed-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  border-top: 1px solid var(--ink-ghost);
+}
+.ed-list li button {
+  margin-left: auto;
+}
+.ed-list .num {
+  font-size: 17px;
+  font-weight: 700;
+}
+.ed-chip {
+  font-family: var(--f-num);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  padding: 1px 8px;
+  color: var(--paper);
+  background: var(--chip, var(--accent));
+  transform: skewX(-8deg);
+}
+.ed-problems {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.ed-problems li {
+  position: relative;
+  padding: 6px 10px 6px 12px;
+  border-left: 3px solid var(--bad);
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+}
+.ed-problems li.good {
+  border-left-color: var(--good);
+  background: color-mix(in srgb, var(--good) 10%, transparent);
+}
+.ed-problems li + li {
+  margin-top: 4px;
+}
+.ed-jump {
+  cursor: pointer;
+}
+.ed-jump::after {
+  content: " ▸ 見る";
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+/* 公開の状態 */
+.ed-pub {
+  padding: 8px 10px 8px 12px;
+  border-left: 3px solid var(--ink-dim);
+  background: var(--ink-ghost);
+  font-size: 14px;
+}
+.ed-pub.public {
+  border-left-color: var(--good);
+}
+.ed-pub.pending {
+  border-left-color: var(--warn);
+}
+.ed-pub.rejected {
+  border-left-color: var(--bad);
+}
+.ed-pub b {
+  font-family: var(--f-head);
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
+.ed-pub.public b {
+  color: var(--good);
+}
+.ed-pub.pending b {
+  color: var(--warn);
+}
+.ed-pub.rejected b {
+  color: var(--bad);
+}
+
+/* スマホ縦: 道具の帯は 4 + 3 (セクターを足して 7 つ) */
+@media (max-width: 560px) {
+  .ed-modes {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .ed-pickrow {
+    flex: 1 1 100%;
+  }
+  .ed-pick {
+    flex: 1;
+  }
+  .ed-sliders label {
+    grid-template-columns: 4.2em 5.4em minmax(0, 1fr);
+  }
+}
+
+/* スマホ横: 左に道具の帯と絵 (画面の高さいっぱい)、右の列に もどる・コース・名前・板 (巻き取り)。
+   QA 2 回目: 740×360 で絵が y=170 から始まり、ほとんど画面の外だった */
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 899px) {
+  .ed {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 34%);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 6px 8px;
+    height: 100vh;
+    height: 100dvh;
+    box-sizing: border-box;
+    overflow: hidden;
+    padding-top: max(6px, env(safe-area-inset-top));
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+  .ed-main {
+    display: contents;
+  }
+  .ed-modes {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .ed-modes button {
+    padding: 4px 2px;
+    min-height: 36px;
+    font-size: 13px;
+  }
+  .ed-stage {
+    grid-column: 1;
+    grid-row: 2 / 4;
+    align-self: start;
+  }
+  .ed-head {
+    grid-column: 2;
+    grid-row: 1;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .ed-head > button {
+    padding: 4px 8px;
+    min-height: 36px;
+    white-space: nowrap;
+  }
+  .ed-title {
+    display: none;
+  }
+  .ed-pickrow {
+    flex: 1;
+  }
+  .ed-pick {
+    flex: 1;
+    min-height: 36px;
+    font-size: 13px;
+  }
+  .ed-namebar {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 2px 8px 2px 12px;
+  }
+  .ed-namebar .label {
+    display: none;
+  }
+  .ed-name {
+    font-size: 15px;
+  }
+  .ed-side {
+    grid-column: 2;
+    grid-row: 3;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 広い画面 (Mac): 絵を左、道具を右 */
+@media (min-width: 900px) {
+  .ed-main {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .ed-stage {
+    flex: 1;
+  }
+  .ed-side {
+    width: 350px;
+    flex: none;
+  }
+  .ed-modes {
+    max-width: 720px;
+  }
+}
+
+/* ---- はじめの画面: 自分のコース・コースをつくる・みんなのコース (ui/tracks.ts) ---- */
+.trackcard-mine .tc-meta {
+  border-top-color: var(--accent-2);
+}
+.trackcard-new {
+  border-style: dashed;
+  border-color: var(--line-strong);
+  background: transparent;
+}
+.trackcard-new .tc-plus {
+  display: grid;
+  place-items: center;
+  height: 84px;
+  font-family: var(--f-num);
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--accent);
+}
+.trackcard-new .tc-meta {
+  border-top-color: var(--accent);
+}
+.community .trackcard .tc-meta {
+  border-top-color: var(--warn);
+}
+.tc-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  width: 100%;
+  font-size: 13px;
+}
+.tc-sub small {
+  flex-basis: 100%;
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tc-like {
+  color: var(--accent);
+}
+
+/* 練習の準備の札: みんなのコースの作った人といいね */
+.pub-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--warn);
+  background: var(--ink-ghost);
+  font-size: 13px;
+}
+.pub-row button {
+  margin-left: auto;
+  min-height: 40px;
+}
+.pub-row button.small.on {
+  background: color-mix(in srgb, var(--accent) 22%, var(--paper-3));
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+/* 管理者の画面: コースの確かめ (ui/admin.ts) */
+.adm-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+.adm-track {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--panel-line);
+}
+.adm-track-pic canvas {
+  display: block;
+  width: 100%;
+  height: 150px;
+  background: #090b0f;
+}
+.adm-track-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.adm-track-body .row b {
+  font-size: 16px;
+}
+@media (max-width: 640px) {
+  .adm-track {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

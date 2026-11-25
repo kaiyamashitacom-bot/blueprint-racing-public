@@ -1,0 +1,3199 @@
+/* レースの画面 (中継風)。色と字は style.css の :root の決まりを使う。
+   板は角ばった濃い面、見出しは差し色の帯、数字は細長い斜めの字。
+   紫 = 自己ベスト・一番速い周、黄 = ピットと注意 */
+.race-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  background: var(--paper);
+  --hud-bg: rgba(9, 11, 16, 0.88);
+  --hud-row: rgba(255, 255, 255, 0.05);
+  --hud-gap: 10px;
+  --hud-top: max(var(--hud-gap), env(safe-area-inset-top));
+  --hud-left: max(var(--hud-gap), env(safe-area-inset-left));
+  --hud-right: max(var(--hud-gap), env(safe-area-inset-right));
+  --hud-bottom: max(14px, env(safe-area-inset-bottom));
+}
+.race-root canvas.main {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-size: 13px;
+}
+.hud .num {
+  font-variant-numeric: tabular-nums;
+}
+.hud .k {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+/* ===== 左上: 順位の塔 ===== */
+.tower {
+  position: absolute;
+  left: var(--hud-left);
+  top: var(--hud-top);
+  width: 268px;
+  background: var(--hud-bg);
+  box-shadow: 0 6px 24px var(--shadow);
+}
+.tower.tappable {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.tw-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  padding: 0 12px 0 10px;
+  background: var(--accent);
+  color: #fff;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.tw-head .k {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 800;
+}
+.tw-head b {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.tower ol {
+  list-style: none;
+  margin: 0;
+  padding: 3px 0 4px;
+}
+.tower li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px 4px minmax(0, 1fr) 58px 16px 14px 9px;
+  gap: 5px;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px 0 2px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tower li + li::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 0;
+  height: 1px;
+  background: var(--hud-row);
+}
+.tower li .p {
+  font-style: italic;
+  font-weight: 800;
+  font-size: 15px;
+  text-align: center;
+}
+.tower li .bar {
+  width: 4px;
+  height: 15px;
+  transform: skewX(-12deg);
+}
+.tower li .nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.tower li .gap {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+/* タイム差の種類 (押して切りかえ) */
+.tw-mode {
+  margin-left: auto;
+  margin-right: 10px;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.85);
+}
+.tower li .gap {
+  text-align: right;
+}
+.tower li .gap.lead {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+}
+.tower li .gap.laps {
+  color: var(--ink-dim);
+}
+.tower li .gap.stop,
+.tower li .gap.out {
+  color: var(--bad);
+  font-weight: 800;
+}
+/* 今のタイヤ (小さな色の丸)・そのタイヤの周・ピットの回数 (黄の棒) */
+.tower li .tire-badge {
+  width: 16px;
+  height: 16px;
+  font-size: 9px;
+  background:
+    radial-gradient(circle, #121419 0 52%, transparent 53%),
+    conic-gradient(rgba(255, 255, 255, 0.12) 0 calc(var(--wear) * 100%), var(--tc) 0);
+}
+.tire-badge.burst {
+  background: var(--bad);
+  color: #fff;
+  animation: pitblink 0.8s steps(2) infinite;
+}
+.tower li .tl {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  color: var(--ink-2);
+}
+.tower li .ps {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+  align-items: center;
+  height: 12px;
+}
+.tower li .ps i {
+  width: 2px;
+  height: 11px;
+  background: var(--warn);
+  transform: skewX(-12deg);
+}
+.tower li .ps b {
+  font-size: 10px;
+  color: var(--warn);
+}
+.tower li.me .tl,
+.tower li.me .gap.lead,
+.tower li.me .gap.laps {
+  color: #0a0c11;
+}
+.tower li.me .ps i {
+  background: #7a6000;
+}
+.tower li.sep,
+.tower li.more {
+  display: block;
+  height: 14px;
+  line-height: 14px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--ink-dim);
+}
+.tower li.more {
+  height: 18px;
+  line-height: 18px;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.tower li.sep::before,
+.tower li.more::before {
+  display: none;
+}
+.tower li.me {
+  background: var(--ink);
+  color: #0a0c11;
+}
+.tower li.me::before {
+  display: none;
+}
+.tower li.me .gap {
+  color: #0a0c11;
+}
+.tower li.pit .gap {
+  color: var(--warn);
+  font-weight: 800;
+}
+.tower li.me.pit .gap {
+  color: #7a6000;
+}
+.tower li.out {
+  opacity: 0.4;
+}
+
+/* ===== 上の真ん中: 時間 ===== */
+.timing {
+  position: absolute;
+  left: 50%;
+  top: var(--hud-top);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: stretch;
+  background: var(--hud-bg);
+  box-shadow: 0 6px 24px var(--shadow);
+  pointer-events: auto;
+}
+.timing .cell {
+  padding: 4px 12px 5px;
+  min-width: 86px;
+  border-right: 1px solid var(--panel-line);
+  transition: background 0.15s;
+}
+.timing .cell.now {
+  border-left: 4px solid var(--accent);
+}
+.timing .v {
+  font-size: 21px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+}
+.timing .cell.now .v {
+  font-size: 23px;
+  font-weight: 800;
+}
+.timing .v.purple {
+  color: var(--best);
+}
+/* 周が終わったとき LAST を光らせる。自己ベストは紫 */
+.timing .cell.flash {
+  background: var(--ink);
+}
+.timing .cell.flash .k,
+.timing .cell.flash .v {
+  color: #0a0c11;
+}
+.timing .cell.flash.pb {
+  background: var(--best);
+}
+.timing .cell.flash.pb .k,
+.timing .cell.flash.pb .v {
+  color: #fff;
+}
+.timing .quit {
+  border: none;
+  border-radius: 0;
+  min-height: 0;
+  min-width: 44px;
+  padding: 0 14px;
+  background: transparent;
+  font-size: 15px;
+  color: var(--ink-dim);
+}
+.timing .quit:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ===== 右上: 地図と天気 ===== */
+.side {
+  position: absolute;
+  right: var(--hud-right);
+  top: var(--hud-top);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.side .mini {
+  background: var(--hud-bg);
+  padding: 4px;
+  box-shadow: 0 6px 24px var(--shadow);
+  border-top: 2px solid var(--ink);
+}
+.side canvas {
+  display: block;
+}
+.wx {
+  background: var(--hud-bg);
+  padding: 5px 8px 6px;
+  font-size: 11px;
+  max-width: 158px;
+  box-shadow: 0 6px 24px var(--shadow);
+}
+.wx-now {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  white-space: nowrap;
+}
+.wx .sky {
+  font-weight: 800;
+  font-size: 12px;
+}
+.wx .sky::before {
+  margin-right: 3px;
+}
+.wx .sky.sun::before {
+  content: "☀";
+  color: var(--warn);
+}
+.wx .sky.light::before {
+  content: "☂";
+}
+.wx .sky.heavy::before {
+  content: "☔";
+}
+.wx .sky.light {
+  color: #7cc4ff;
+}
+.wx .sky.heavy {
+  color: #4ea8de;
+}
+.wetbar {
+  height: 4px;
+  margin: 4px 0 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.wetbar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #7cc4ff, #2f8fd6);
+}
+.wx .fc {
+  color: var(--ink-2);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== 下: 計器 ===== */
+.dash {
+  position: absolute;
+  left: 50%;
+  bottom: var(--hud-bottom);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 58px;
+  padding: 0 0 0 0;
+  background: var(--hud-bg);
+  box-shadow: 0 6px 24px var(--shadow);
+  border-bottom: 3px solid var(--accent);
+  white-space: nowrap;
+}
+.dash .pos {
+  align-self: stretch;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  padding: 0 12px 0 10px;
+  min-width: 58px;
+  background: var(--ink);
+  color: #0a0c11;
+  font-style: italic;
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 58px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+.dash .pos small {
+  font-size: 15px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+.dash .pos small:first-child {
+  margin-right: 1px;
+}
+.dash .pos[style*="none"] + .tyre,
+.dash > .tyre:first-child {
+  margin-left: 12px;
+}
+.speed {
+  text-align: right;
+}
+.dash .spd {
+  font-size: 44px;
+  font-style: italic;
+  font-weight: 800;
+  line-height: 0.88;
+  min-width: 2.1em;
+  letter-spacing: -0.01em;
+}
+.dash .unit {
+  font-family: var(--f-num);
+  font-size: 10px;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--ink-dim);
+  letter-spacing: 0.16em;
+}
+.pedal-meters {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 38px;
+}
+.pedal-meters span {
+  width: 6px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+.pedal-meters i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.pedal-meters .thr i {
+  background: var(--good);
+}
+.pedal-meters .brk i {
+  background: var(--bad);
+}
+.fuel {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 6px;
+  row-gap: 4px;
+  align-items: baseline;
+}
+.fuel > .num {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.fuel .bar {
+  grid-column: 1 / -1;
+  width: 104px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.fuel .bar i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+.fuel .bar i.low {
+  background: var(--bad);
+}
+.tyre {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.tyre .w {
+  font-size: 20px;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1;
+}
+.tyre .w small {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.tyre .w.worn {
+  color: var(--warn);
+}
+.tyre .w.burst {
+  color: var(--bad);
+}
+.tire-badge {
+  --tc: #fff;
+  --wear: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex: none;
+  font-family: var(--f-num);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--tc);
+  background:
+    radial-gradient(circle, #121419 0 57%, transparent 58%),
+    conic-gradient(rgba(255, 255, 255, 0.12) 0 calc(var(--wear) * 100%), var(--tc) 0);
+}
+.tire-badge.none {
+  color: var(--ink-dim);
+  background: radial-gradient(circle, #121419 0 57%, rgba(255, 255, 255, 0.18) 58%);
+}
+.pit-btn {
+  pointer-events: auto;
+  align-self: stretch;
+  min-height: 46px;
+  min-width: 70px;
+  border: none;
+  border-radius: 0;
+  border-left: 1px solid var(--panel-line);
+  background: rgba(255, 255, 255, 0.06);
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: 0.04em;
+}
+.pit-btn:hover {
+  background: rgba(255, 210, 31, 0.18);
+  border-color: var(--panel-line);
+}
+.pit-btn.booked {
+  background: var(--warn);
+  color: #1a1400;
+  animation: pitblink 1s steps(2) infinite;
+}
+.pit-btn.active {
+  background: var(--warn);
+  color: #1a1400;
+}
+@keyframes pitblink {
+  50% {
+    background: #a88a00;
+  }
+}
+
+/* 傷みの図 (上から見た小さな車) */
+.dash .dmg {
+  flex: none;
+  width: 24px;
+  height: 36px;
+}
+.dash .pos[style*="none"] + .dmg {
+  margin-left: 12px;
+}
+
+/* DRS: 計器の右上に乗せる。大きな「DRS」と、下の行に今の様子。
+   灰 = 使えない (OFF)、灰に赤い字 = 検知の線で 1 秒より離れていた (+1.4 → 不可)、緑の縁 = 次の区間で使える (+0.7 → 可)、
+   緑で光る = 区間の中で押せる (ZONE)、明るい緑 = 開いている (OPEN)。
+   オーバーテイク (青・角を切った形・目盛り) と分けるため、四角で左に太い線 */
+.drs-btn {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 96px;
+  min-height: 52px;
+  padding: 3px 10px 4px 14px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-left-width: 6px;
+  border-radius: 0;
+  background: var(--hud-bg);
+  color: var(--ink-dim);
+  font-family: var(--f-num);
+  font-style: italic;
+  line-height: 1;
+  pointer-events: auto;
+}
+.drs-btn b {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.drs-btn small {
+  font-family: var(--f-num), "Noto Sans JP", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.drs-btn:hover {
+  background: var(--hud-bg);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.drs-btn.no {
+  border-left-color: var(--bad);
+}
+.drs-btn.no small {
+  color: var(--bad);
+}
+.drs-btn.armed {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 55%, transparent);
+  border-left-color: var(--good);
+}
+.drs-btn.ready {
+  color: #04140b;
+  background: var(--good);
+  border-color: var(--good);
+  border-left-color: #fff;
+  animation: drsready 0.8s ease-in-out infinite alternate;
+}
+.drs-btn.ready:hover {
+  background: var(--good);
+}
+.drs-btn.open {
+  color: #04140b;
+  background: #8dffbf;
+  border-color: #fff;
+  box-shadow: 0 0 18px rgba(34, 211, 122, 0.75);
+}
+.drs-btn.open:hover {
+  background: #8dffbf;
+}
+@keyframes drsready {
+  to {
+    box-shadow: 0 0 16px rgba(34, 211, 122, 0.8);
+  }
+}
+
+/* オーバーテイクモード: DRS の左に乗せる。灰 = この周は使えない、縁 = 使える周だが今は待つ、青く光る = 押せる、明るい = 使っている。下の線 = この周の残り */
+.ot-btn {
+  position: absolute;
+  right: 104px;
+  bottom: calc(100% + 6px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 2px 10px 3px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0;
+  background: var(--hud-bg);
+  color: var(--ink-dim);
+  font-family: var(--f-num);
+  font-style: italic;
+  line-height: 1;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+}
+.ot-btn b {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.ot-btn small {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.ot-gauge {
+  display: block;
+  width: 100%;
+  min-width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.ot-gauge i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: #3fb7ff;
+}
+.ot-btn:hover {
+  background: var(--hud-bg);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.ot-btn.armed {
+  color: #3fb7ff;
+  border-color: rgba(63, 183, 255, 0.5);
+}
+.ot-btn.ready {
+  color: #021320;
+  background: #3fb7ff;
+  border-color: #3fb7ff;
+  animation: otready 0.8s ease-in-out infinite alternate;
+}
+.ot-btn.ready .ot-gauge,
+.ot-btn.active .ot-gauge {
+  background: rgba(2, 19, 32, 0.25);
+}
+.ot-btn.ready .ot-gauge i,
+.ot-btn.active .ot-gauge i {
+  background: #021320;
+}
+.ot-btn.ready:hover {
+  background: #3fb7ff;
+}
+.ot-btn.active {
+  color: #021320;
+  background: #a6e1ff;
+  border-color: #fff;
+  box-shadow: 0 0 18px rgba(63, 183, 255, 0.8);
+}
+.ot-btn.active:hover {
+  background: #a6e1ff;
+}
+@keyframes otready {
+  to {
+    box-shadow: 0 0 14px rgba(63, 183, 255, 0.7);
+  }
+}
+
+/* 段と回転: 速さの右。MT = マニュアル (自分で変速)、AT = オートマ (見た目の段)。目盛りは変えどきで光り、回しきると赤 */
+.gearbox {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto 5px;
+  column-gap: 4px;
+  row-gap: 3px;
+  align-items: end;
+  font-family: var(--f-num);
+  font-style: italic;
+}
+.gearbox .gear-k {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+  padding-bottom: 3px;
+}
+.gearbox.mt .gear-k {
+  color: #3fb7ff;
+}
+.gearbox .gear-n {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 0.9;
+  min-width: 0.7em;
+  text-align: center;
+}
+.gearbox .rpm {
+  grid-column: 1 / -1;
+  width: 48px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.gearbox .rpm i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--ink-dim);
+}
+.gearbox.mt .rpm i {
+  background: var(--good);
+}
+.gearbox.shift .rpm i {
+  background: #3fb7ff;
+}
+.gearbox.shift .gear-n {
+  color: #3fb7ff;
+}
+.gearbox.limit .rpm i,
+.gearbox.limit .gear-n {
+  background-color: var(--bad);
+  color: var(--bad);
+}
+.gearbox.limit .gear-n {
+  background: none;
+}
+/* さわる機械はオートマだけなので、段は出さない (帯を詰める) */
+@media (hover: none), (pointer: coarse) {
+  .gearbox:not(.mt) {
+    display: none;
+  }
+}
+
+/* 旗の帯: 計器の左上に乗せる。黄 = 黄旗・VSC・SC、赤い札 = 罰 */
+.flag-bar {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  display: flex;
+  align-items: stretch;
+  /* 右の DRS とオーバーテイクのボタンにかからない幅 */
+  max-width: calc(100% - 176px);
+  min-height: 44px;
+  background: #0b0d12;
+  box-shadow: 0 6px 24px var(--shadow);
+  white-space: nowrap;
+}
+.flag-bar .tag {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  padding: 0 10px;
+  background: var(--warn);
+  color: #1a1400;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 22px;
+}
+.flag-bar .tx {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 12px 3px 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+.flag-bar .tx b {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--warn);
+}
+.flag-bar .tx small {
+  font-size: 11px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.flag-bar.sc,
+.flag-bar.vsc {
+  border-top: 3px solid var(--warn);
+}
+.flag-bar.sc .tag {
+  animation: flagblink 1s steps(2) infinite;
+}
+.flag-bar.yellow .tag {
+  font-family: var(--f-ui);
+  font-style: normal;
+  font-size: 20px;
+  animation: flagblink 0.7s steps(2) infinite;
+}
+@keyframes flagblink {
+  50% {
+    background: #a88a00;
+  }
+}
+.flag-bar .pen {
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+  background: var(--bad);
+  color: #fff;
+  font-style: italic;
+  font-weight: 800;
+  font-size: 16px;
+}
+
+/* 前と後ろの車との差 (練習は幽霊)。緑 = 自分に良い・赤 = 悪い。
+   入れ物は右の列 (.side) の中。広い画面では計器の上の段 (旗の帯と DRS のさらに上) に出す */
+.duel {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--hud-bottom) + 58px + 56px);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  pointer-events: none;
+}
+/* ピットの札を開いている間は隠す (札と重なるので) */
+.hud.pit-open .duel {
+  display: none;
+}
+.duel .dl {
+  display: grid;
+  grid-template-columns: auto 4px 84px 20px 62px 36px;
+  grid-template-rows: 14px 24px;
+  column-gap: 5px;
+  align-items: center;
+  padding: 2px 8px 3px 6px;
+  background: var(--hud-bg);
+  box-shadow: 0 6px 24px var(--shadow);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+}
+.duel .dk {
+  grid-column: 1 / -1;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+}
+.duel .dp {
+  font-style: italic;
+  font-weight: 800;
+  font-size: 15px;
+}
+.duel .bar {
+  width: 4px;
+  height: 16px;
+  transform: skewX(-12deg);
+}
+.duel .dn {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 600;
+}
+.duel .tire-badge {
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+}
+.duel .dv {
+  font-style: italic;
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+  text-align: right;
+}
+.duel .dt {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--ink-dim);
+}
+.duel .dl.good {
+  border-bottom-color: var(--good);
+}
+.duel .dl.good .dt {
+  color: var(--good);
+}
+.duel .dl.bad {
+  border-bottom-color: var(--bad);
+}
+.duel .dl.bad .dt {
+  color: var(--bad);
+}
+.duel .dl.ghost {
+  grid-template-columns: auto;
+  grid-template-rows: 14px 26px;
+  min-width: 104px;
+  text-align: center;
+}
+.duel .dl.ghost .dv {
+  font-size: 26px;
+  text-align: center;
+}
+.duel .dl.ghost.good .dv {
+  color: var(--good);
+}
+.duel .dl.ghost.bad .dv {
+  color: var(--bad);
+}
+/* 幽霊がいくつもいる (1 周アタック): 比べている幽霊の名前を GHOST の横に、幽霊の色の帯つきで */
+.duel .dl.ghost .gn {
+  display: inline-block;
+  max-width: 120px;
+  margin-left: 6px;
+  padding-left: 4px;
+  overflow: hidden;
+  vertical-align: top;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border-left: 3px solid var(--gc, var(--ink-dim));
+  font-family: var(--f-ui);
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 14px;
+  color: var(--ink);
+}
+
+/* 塔の見出し: SC・VSC の間は黄色 */
+.tower[data-flag="sc"] .tw-head,
+.tower[data-flag="vsc"] .tw-head {
+  background: var(--warn);
+  color: #1a1400;
+}
+.tower[data-flag="sc"] .tw-head .k,
+.tower[data-flag="vsc"] .tw-head .k {
+  color: #1a1400;
+}
+
+/* ===== ピットの札 ===== */
+.pit-panel {
+  display: none;
+  position: absolute;
+  left: var(--hud-left);
+  bottom: calc(var(--hud-bottom) + 70px);
+  width: min(420px, calc(50vw - 40px));
+  max-height: calc(100% - 200px);
+  overflow: auto;
+  background: #0b0d12;
+  border-top: 4px solid var(--warn);
+  box-shadow: 0 10px 40px var(--shadow);
+  padding: 8px 12px 12px;
+  pointer-events: auto;
+  z-index: 2;
+}
+.hud.pit-open .keys {
+  display: none;
+}
+.pp-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.pp-head b {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.03em;
+  color: var(--warn);
+}
+.pp-secs {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.pp-secs .num {
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 800;
+  color: var(--ink);
+}
+.pp-status {
+  font-size: 12px;
+  color: var(--ink-2);
+  margin: 2px 0 6px;
+  padding-left: 8px;
+  border-left: 2px solid var(--warn);
+}
+.pp-k {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-dim);
+  margin: 6px 0 4px;
+}
+.pp-tires {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
+}
+.pp-t {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px;
+  min-height: 0;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.05);
+}
+.pp-t .nm {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.pp-t.on,
+.pp-fuel button.on {
+  border-color: var(--warn);
+  background: rgba(255, 210, 31, 0.14);
+  box-shadow: inset 0 -3px 0 var(--warn);
+}
+.pp-fuel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+}
+.pp-fuel button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+}
+.pp-fuel .num {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.pp-row2 {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+  gap: 6px;
+}
+.pp-fix {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 2px;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+}
+.pp-fix .num {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.pp-fix.on {
+  border-color: var(--warn);
+  background: rgba(255, 210, 31, 0.14);
+  box-shadow: inset 0 -3px 0 var(--warn);
+}
+.pp-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 10px;
+}
+.pp-actions button {
+  flex: 1;
+  border-radius: 0;
+  border: 1px solid var(--panel-line);
+  font-size: 13px;
+  padding: 8px 6px;
+}
+.pp-actions button.go {
+  flex: 1.6;
+  background: var(--warn);
+  border-color: var(--warn);
+  color: #1a1400;
+  font-weight: 800;
+}
+.pp-actions button.go:hover {
+  background: #ffe066;
+}
+
+/* ===== スタートの信号: 横の梁に 5 つの箱、箱ごとに 2 つの灯 ===== */
+.gantry {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px 10px;
+  background: linear-gradient(#1a1d24, #07080a);
+  border-top: 4px solid #2a2e37;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+}
+.gantry span {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  background: #0d0e11;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.gantry i {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #1f0b0b;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.9);
+  transition: background 0.04s;
+}
+.gantry span.on i {
+  background: radial-gradient(circle at 40% 35%, #ffc0c0, #ff2020 48%, #a00000);
+  box-shadow:
+    0 0 20px #ff2a2a,
+    inset 0 -2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* ===== 大きな字・お知らせ ===== */
+.bigmsg {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  transform: translateX(-50%) skewX(-10deg);
+  padding: 5px 22px 6px;
+  background: var(--hud-bg);
+  border-left: 5px solid var(--accent);
+  font-size: clamp(18px, 3.4vw, 28px);
+  font-weight: 900;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  box-shadow: 0 8px 30px var(--shadow);
+}
+.bigmsg.lap {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: clamp(30px, 6vw, 48px);
+  line-height: 1;
+  padding: 6px 24px 7px;
+  background: var(--ink);
+  color: #0a0c11;
+  border-left-color: var(--ink-2);
+}
+.bigmsg.lap.pb {
+  background: var(--best);
+  color: #fff;
+  border-left-color: #fff;
+}
+.bigmsg.lap.void {
+  background: var(--hud-bg);
+  color: var(--ink-dim);
+  border-left-color: var(--ink-dim);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+.bigmsg.pit {
+  background: var(--warn);
+  color: #1a1400;
+  border-left-color: #1a1400;
+  font-family: var(--f-num);
+  font-style: italic;
+}
+.bigmsg.bad {
+  background: var(--bad);
+  color: #fff;
+  border-left-color: #fff;
+}
+.bigmsg.fin {
+  padding-left: 40px;
+  background: var(--ink);
+  color: #0a0c11;
+  border-left: none;
+  font-style: italic;
+}
+.bigmsg.fin::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  background: repeating-conic-gradient(#111 0 25%, #fff 0 50%) 0 0 / 12px 12px;
+}
+.toast {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  transform: translateX(-50%) skewX(-10deg);
+  padding: 5px 16px;
+  background: var(--warn);
+  color: #1a1400;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 6px 24px var(--shadow);
+}
+.keys {
+  position: absolute;
+  left: var(--hud-left);
+  bottom: var(--hud-bottom);
+  max-width: calc(50% - 250px);
+  font-size: 11px;
+  line-height: 2;
+  color: var(--ink-dim);
+}
+/* 1280 px より狭い画面では計器の帯 (真ん中、幅 約 480〜560 px) と横に並ばないので、計器の高さより上に置く (仮) */
+@media (max-width: 1279px) {
+  .keys {
+    bottom: calc(var(--hud-bottom) + 70px);
+    max-width: min(380px, calc(100% - 2 * var(--hud-left)));
+  }
+}
+@media (max-width: 760px) {
+  .keys {
+    display: none;
+  }
+}
+.keys kbd {
+  font-family: var(--f-num);
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  padding: 0 6px;
+  margin: 0 2px;
+  color: var(--ink);
+}
+
+/* ===== さわる操作 (スマホ) ===== */
+.pads {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 0;
+  pointer-events: none;
+  --pad: 78px;
+  --pad-gap: 14px;
+  --pad-edge: 16px;
+}
+.pad {
+  position: absolute;
+  bottom: max(var(--pad-edge), env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(9, 11, 16, 0.5);
+  color: var(--ink);
+  font-weight: 800;
+  pointer-events: auto;
+  touch-action: none;
+  transition:
+    background 0.06s,
+    border-color 0.06s;
+}
+.pad.on {
+  background: color-mix(in srgb, var(--ink) 30%, transparent);
+  border-color: var(--ink);
+}
+.pad.left,
+.pad.right {
+  width: var(--pad);
+  height: var(--pad);
+  border-radius: 50%;
+  font-size: 26px;
+}
+.pad.left {
+  left: max(var(--pad-edge), env(safe-area-inset-left));
+}
+.pad.right {
+  left: calc(max(var(--pad-edge), env(safe-area-inset-left)) + var(--pad) + var(--pad-gap));
+}
+.pad.brake,
+.pad.throttle {
+  border-radius: 4px;
+  flex-direction: column;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.pad.brake {
+  right: calc(max(var(--pad-edge), env(safe-area-inset-right)) + var(--pad) + 6px + var(--pad-gap));
+  width: var(--pad);
+  height: var(--pad);
+  border-color: color-mix(in srgb, var(--bad) 75%, transparent);
+  box-shadow: inset 0 -4px 0 color-mix(in srgb, var(--bad) 60%, transparent);
+}
+.pad.throttle {
+  right: max(var(--pad-edge), env(safe-area-inset-right));
+  width: calc(var(--pad) + 6px);
+  height: calc(var(--pad) * 1.5);
+  border-color: color-mix(in srgb, var(--good) 75%, transparent);
+  box-shadow: inset 0 -4px 0 color-mix(in srgb, var(--good) 60%, transparent);
+}
+.pad.brake.on {
+  background: color-mix(in srgb, var(--bad) 35%, transparent);
+}
+.pad.throttle.on {
+  background: color-mix(in srgb, var(--good) 30%, transparent);
+}
+.pad small {
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.12em;
+  opacity: 0.75;
+}
+@media (hover: hover) and (pointer: fine) {
+  .pads {
+    display: none;
+  }
+}
+@media (hover: none), (pointer: coarse) {
+  .keys {
+    display: none;
+  }
+}
+
+/* ===== 狭い画面 (スマホの縦) ===== */
+@media (max-width: 560px) {
+  .race-root {
+    --hud-gap: 8px;
+  }
+  /* 時間を左上、その下に塔、右に地図。真ん中は道を見せる */
+  .timing {
+    left: var(--hud-left);
+    transform: none;
+    width: 176px;
+  }
+  .timing .cell:not(.now):nth-child(2) {
+    display: none;
+  }
+  .timing .cell {
+    flex: 1;
+    min-width: 0;
+    padding: 3px 7px 4px;
+  }
+  .timing .v,
+  .timing .cell.now .v {
+    font-size: 17px;
+  }
+  .timing .quit {
+    min-width: 38px;
+    padding: 0 10px;
+  }
+  .tower {
+    top: calc(var(--hud-top) + 48px);
+    width: 176px;
+  }
+  .side .mini {
+    padding: 3px;
+  }
+  .wx {
+    max-width: 112px;
+    font-size: 10px;
+    padding: 4px 6px 5px;
+  }
+  .wx .sky {
+    font-size: 11px;
+  }
+  .wx .fc {
+    font-size: 10px;
+  }
+  .wx-now .dim {
+    display: none;
+  }
+  .dash {
+    gap: 6px;
+    height: 52px;
+    max-width: calc(100vw - 12px);
+  }
+  .dash .pos {
+    min-width: 42px;
+    font-size: 26px;
+    line-height: 52px;
+    padding: 0 9px 0 6px;
+  }
+  .dash .pos small {
+    font-size: 12px;
+  }
+  .dash .dmg {
+    width: 22px;
+    height: 33px;
+  }
+  .dash .spd {
+    font-size: 32px;
+    min-width: 1.8em;
+  }
+  .tyre {
+    gap: 5px;
+  }
+  .tyre .w {
+    font-size: 17px;
+  }
+  .dash .pedal-meters {
+    display: none;
+  }
+  .tire-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  .tyre .k {
+    display: none;
+  }
+  .fuel .bar {
+    width: 58px;
+  }
+  .fuel > .num {
+    font-size: 12px;
+  }
+  .fuel > .k {
+    display: none;
+  }
+  .pit-btn {
+    min-width: 50px;
+    font-size: 16px;
+  }
+  .flag-bar .tag {
+    min-width: 40px;
+    font-size: 19px;
+  }
+  .flag-bar .tx b {
+    font-size: 16px;
+  }
+  /* ピットの札は上に (塔と地図の上にかぶせる。下の車は隠さない) */
+  .pit-panel {
+    left: 50%;
+    bottom: auto;
+    top: var(--hud-top);
+    transform: translateX(-50%);
+    width: calc(100vw - 16px);
+    max-height: 56%;
+  }
+  .gantry {
+    top: 26%;
+    gap: 6px;
+    padding: 8px 10px 7px;
+  }
+  .gantry span {
+    padding: 4px;
+    gap: 4px;
+  }
+  .gantry i {
+    width: 22px;
+    height: 22px;
+  }
+  .bigmsg {
+    top: 40%;
+    font-size: 17px;
+    padding: 4px 14px 5px;
+  }
+  .toast {
+    top: 47%;
+    font-size: 13px;
+  }
+  .tower li {
+    height: 20px;
+    font-size: 11px;
+  }
+  .tower li:nth-child(n + 6) {
+    display: none;
+  }
+  .tower li.me {
+    display: grid;
+  }
+}
+
+/* ===== 低い画面 (スマホの横) ===== */
+@media (max-height: 500px) {
+  .race-root {
+    --hud-gap: 8px;
+    --hud-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  .tower {
+    width: 160px;
+  }
+  .tw-head {
+    height: 24px;
+  }
+  .tw-head b {
+    font-size: 18px;
+  }
+  .tower li {
+    height: 18px;
+    font-size: 11px;
+  }
+  .tower li .p {
+    font-size: 13px;
+  }
+  .tower li:nth-child(n + 6) {
+    display: none;
+  }
+  .tower li.me {
+    display: grid;
+  }
+  .timing .cell {
+    min-width: 72px;
+    padding: 2px 9px 3px;
+  }
+  .timing .v,
+  .timing .cell.now .v {
+    font-size: 17px;
+  }
+  .wx {
+    font-size: 10px;
+  }
+  .wx .fc:nth-child(n + 4) {
+    display: none;
+  }
+  .dash {
+    height: 48px;
+    gap: 10px;
+  }
+  .dash .pos {
+    font-size: 26px;
+    line-height: 48px;
+    min-width: 46px;
+  }
+  .dash .spd {
+    font-size: 34px;
+  }
+  .tire-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  .pit-btn {
+    min-height: 44px;
+    min-width: 58px;
+    font-size: 16px;
+  }
+  /* ピットの札は左上 (塔にかぶせる)。車は真ん中なので隠さない */
+  .pit-panel {
+    top: var(--hud-top);
+    bottom: auto;
+    width: min(380px, calc(50vw - 40px));
+    max-height: calc(100% - var(--hud-top) - 108px);
+    padding: 6px 10px 8px;
+  }
+  .pp-k {
+    margin: 4px 0 3px;
+  }
+  .pp-t {
+    padding: 3px 2px;
+  }
+  .pp-t .tire-badge {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+  .pp-t .nm {
+    display: none;
+  }
+  .pp-head b,
+  .pp-secs .num {
+    font-size: 19px;
+  }
+  .pp-status {
+    margin: 0 0 2px;
+    font-size: 11px;
+  }
+  .pp-fuel button {
+    min-height: 40px;
+    padding: 3px;
+  }
+  .pp-actions {
+    margin-top: 6px;
+  }
+  .pp-actions button {
+    min-height: 40px;
+    padding: 4px 6px;
+  }
+  .gantry {
+    top: 22%;
+    padding: 8px 10px 7px;
+  }
+  .gantry span {
+    padding: 4px;
+    gap: 4px;
+  }
+  .gantry i {
+    width: 22px;
+    height: 22px;
+  }
+  .bigmsg {
+    top: 40%;
+  }
+  .toast {
+    top: 52%;
+  }
+}
+
+/* さわる操作のとき: 計器をボタンの上 (縦) や間 (横) に */
+@media (pointer: coarse) and (max-width: 560px) {
+  .pads {
+    --pad: 70px;
+    --pad-gap: 10px;
+    --pad-edge: 12px;
+  }
+  .dash {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 70px * 1.5 + 16px);
+  }
+  /* DRS は少し低く (すぐ上の車にかからないように) */
+  .drs-btn {
+    min-width: 88px;
+    min-height: 46px;
+    padding: 2px 8px 3px 11px;
+  }
+  .drs-btn b {
+    font-size: 24px;
+  }
+  .ot-btn {
+    right: 94px;
+  }
+  .flag-bar {
+    max-width: calc(100% - 164px);
+  }
+}
+@media (pointer: coarse) and (max-height: 500px) {
+  .pads {
+    --pad: 70px;
+    --pad-gap: 10px;
+    --pad-edge: 12px;
+  }
+  .dash .pedal-meters,
+  .dash .tyre .k,
+  .fuel > .k {
+    display: none;
+  }
+  .fuel .bar {
+    width: 36px;
+  }
+  .fuel > .num {
+    font-size: 11px;
+  }
+  /* 順位は「P5」だけ (全体の台数は塔にある) */
+  .dash .pos small:last-child {
+    display: none;
+  }
+  /* 帯を左右のボタンの間 (約 410 px) に収める (DRS とオーバーテイクを中に入れた分を詰める) */
+  .dash {
+    gap: 4px;
+  }
+  .dash .pos {
+    min-width: 40px;
+    font-size: 22px;
+    padding: 0 8px 0 6px;
+  }
+  .dash .spd {
+    font-size: 30px;
+    min-width: 1.7em;
+  }
+  /* DRS とオーバーテイクは帯の中なので、旗の帯は横いっぱいまで */
+  .flag-bar {
+    max-width: 100%;
+  }
+  /* DRS は計器の帯の中 (PIT の左) に入れる。帯の上に浮かせると車のすぐ前の道にかぶっていた */
+  .drs-btn {
+    position: static;
+    order: 1;
+    align-self: stretch;
+    min-width: 42px;
+    min-height: 0;
+    padding: 2px 4px;
+    clip-path: none;
+    border-width: 0 0 0 1px;
+  }
+  .drs-btn b {
+    font-size: 19px;
+  }
+  .drs-btn small {
+    font-size: 9px;
+  }
+  /* オーバーテイクも帯の中 (DRS の左) */
+  .ot-btn {
+    position: static;
+    order: 1;
+    align-self: stretch;
+    min-width: 40px;
+    min-height: 0;
+    padding: 2px 4px;
+    clip-path: none;
+    border-width: 0 0 0 1px;
+  }
+  .ot-btn b {
+    font-size: 15px;
+  }
+  .ot-btn small {
+    display: none;
+  }
+  .ot-gauge {
+    min-width: 28px;
+  }
+  .dash .pit-btn {
+    order: 2;
+    min-width: 44px;
+    padding: 0 6px;
+  }
+}
+
+/* 前と後ろの車との差: スマホの横は上の真ん中 (時間の下)、縦は右の地図の下に縦に並べる。車 (画面の 64% の高さ) とさわるボタンにかぶせない */
+@media (max-height: 500px) {
+  .duel {
+    top: calc(var(--hud-top) + 44px);
+    bottom: auto;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .duel .dl {
+    grid-template-columns: auto 4px 70px 18px 52px 30px;
+    grid-template-rows: 20px;
+    padding: 2px 6px 2px 5px;
+  }
+  .duel .dk {
+    display: none;
+  }
+  .duel .dv {
+    font-size: 17px;
+  }
+  .duel .dl.ghost.named .dk {
+    display: block;
+  }
+  .duel .tire-badge {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+}
+@media (max-width: 560px) {
+  .duel {
+    position: static;
+    transform: none;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .duel .dl {
+    grid-template-columns: auto 4px minmax(0, 1fr);
+    grid-template-rows: 16px 20px;
+    grid-template-areas: "p b n" "v v v";
+    padding: 2px 6px 3px 5px;
+  }
+  .duel .dk,
+  .duel .dl:not(.ghost) .tire-badge {
+    display: none;
+  }
+  .duel .dp {
+    grid-area: p;
+    font-size: 13px;
+  }
+  .duel .bar {
+    grid-area: b;
+    height: 13px;
+  }
+  .duel .dn {
+    grid-area: n;
+    font-size: 11px;
+  }
+  .duel .dv {
+    grid-area: v;
+    font-size: 18px;
+    text-align: left;
+  }
+  .duel .dt {
+    grid-area: v;
+    justify-self: end;
+    font-size: 10px;
+  }
+  .duel .dl.ghost {
+    grid-template-columns: auto;
+    grid-template-rows: 14px 22px;
+    grid-template-areas: none;
+    min-width: 0;
+  }
+  .duel .dl.ghost .dk {
+    display: block;
+  }
+  .duel .dl.ghost .dv {
+    grid-area: auto;
+    font-size: 20px;
+  }
+  /* 塔: 縮めた形 (押すと全部)。タイヤの周とピットの回数は残す */
+  .tower {
+    width: 204px;
+  }
+  .tower li {
+    grid-template-columns: 18px 3px minmax(0, 1fr) 48px 14px 11px 7px;
+    gap: 4px;
+    padding: 0 6px 0 1px;
+  }
+  .tower li .gap {
+    font-size: 11px;
+  }
+  .tower li .tire-badge {
+    width: 14px;
+    height: 14px;
+    font-size: 8px;
+  }
+  .tower li .tl {
+    font-size: 10px;
+  }
+  .tw-mode {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+  }
+}
+@media (max-height: 500px) {
+  .tower {
+    width: 190px;
+  }
+  .tower li {
+    grid-template-columns: 18px 3px minmax(0, 1fr) 46px 14px 11px 7px;
+    gap: 4px;
+  }
+  .tower li .gap {
+    font-size: 11px;
+  }
+  .tower li .tire-badge {
+    width: 14px;
+    height: 14px;
+    font-size: 8px;
+  }
+}
+/* 狭い画面の塔は JS (view.ts) が行を選ぶので、前の「6 番目から隠す」はやめる */
+@media (max-width: 560px), (max-height: 500px) {
+  .tower li:nth-child(n + 6) {
+    display: grid;
+  }
+  .tower li.sep:nth-child(n + 6),
+  .tower li.more:nth-child(n + 6) {
+    display: block;
+  }
+}
+
+/* ===== 待合・結果・準備の札 (レースの上にかぶせる) ===== */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 0%, rgba(255, 43, 58, 0.08), transparent 70%),
+    rgba(6, 8, 12, 0.72);
+  pointer-events: auto;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.overlay .frame {
+  max-width: 620px;
+  width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  background: linear-gradient(180deg, #151820, #0e1016);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* 中継の見出し: 赤い札に白い斜めの字 + 右に説明 */
+.bc-head {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: -16px -16px 14px -20px;
+  border-bottom: 1px solid var(--panel-line);
+  background: rgba(0, 0, 0, 0.3);
+}
+.bc-head h3 {
+  display: flex;
+  align-items: center;
+  padding: 8px 22px 8px 20px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+}
+.bc-head h3 small {
+  margin-left: 8px;
+  font-family: var(--f-ui);
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.bc-head .bc-sub {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px 30px 4px 12px;
+  min-width: 0;
+}
+.bc-head .bc-sub b {
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bc-head .bc-sub .label {
+  font-size: 11px;
+}
+
+/* 待合: 始まるまでの秒 + スタートの並び */
+.overlay .lobby-frame {
+  max-width: 860px;
+}
+.lobby-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 760px), (min-width: 640px) and (max-height: 500px) {
+  .lobby-body {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 18px;
+  }
+}
+.countdown-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.countdown {
+  min-width: 2.2ch;
+  padding: 0 12px 0 8px;
+  background: var(--ink);
+  color: #0a0c11;
+  font-size: 48px;
+  font-style: italic;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.countdown-box .k {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+}
+.countdown-box .dim {
+  font-size: 13px;
+}
+.lobby-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 10px;
+  row-gap: 6px;
+}
+/* 2 列のずらした並び (偶数の枠を半分下げる) */
+.lobby-list li:nth-child(even) {
+  transform: translateY(14px);
+}
+.lobby-list li {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 4px 1fr;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding-right: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-top: 2px solid rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 0;
+}
+.lobby-list li .slot {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.1);
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 17px;
+}
+.lobby-list li .bar {
+  width: 4px;
+  height: 18px;
+  transform: skewX(-12deg);
+  background: var(--tc, var(--ink-dim));
+}
+.lobby-list li .nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lobby-list li .you {
+  margin-left: 4px;
+  padding: 0 5px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.lobby-list li.me {
+  border-top-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.lobby-list li.me .slot {
+  background: var(--ink);
+  color: #0a0c11;
+}
+.lobby-list li.cpu {
+  color: var(--ink-dim);
+  border-top-style: dashed;
+  border-top-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.025);
+  font-weight: 500;
+}
+.lobby-hint {
+  margin-top: 24px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--warn);
+  background: rgba(255, 210, 31, 0.07);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+/* 結果: 順位の表 (1〜3 位を目立たせる・一番速い周は紫) */
+.overlay .results-frame {
+  max-width: 680px;
+}
+table.results {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 3px;
+  font-size: 13px;
+}
+table.results th {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--ink-dim);
+  text-align: left;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+table.results th.r,
+table.results td.r {
+  text-align: right;
+}
+table.results td {
+  padding: 0 8px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.045);
+  white-space: nowrap;
+}
+table.results td.pos {
+  width: 40px;
+  padding: 0;
+  text-align: center;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.1);
+}
+table.results tr.podium td.pos {
+  background: var(--ink);
+  color: #0a0c11;
+}
+table.results tr.p1 td.pos {
+  background: var(--accent);
+  color: #fff;
+}
+table.results td.who {
+  max-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 700;
+}
+table.results td.who .bar {
+  display: inline-block;
+  width: 4px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: -3px;
+  transform: skewX(-12deg);
+}
+table.results td.who .you {
+  margin-left: 6px;
+  padding: 0 5px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+table.results td.num {
+  font-size: 15px;
+  font-weight: 600;
+}
+table.results td.t .pen {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--warn);
+}
+table.results td.t.out {
+  color: var(--bad);
+  font-family: var(--f-ui);
+  font-size: 12px;
+  font-weight: 700;
+}
+table.results td.fl {
+  color: var(--ink-2);
+}
+table.results td.fl.purple {
+  color: #fff;
+  background: color-mix(in srgb, var(--best) 70%, transparent);
+  font-weight: 800;
+}
+table.results td.pts {
+  width: 44px;
+  text-align: center;
+  font-size: 18px;
+  font-style: italic;
+  font-weight: 800;
+}
+table.results tr.me td {
+  background: color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.04));
+}
+table.results tr.me td.pos {
+  background: var(--accent);
+  color: #fff;
+}
+table.results tr.me td.fl.purple {
+  background: color-mix(in srgb, var(--best) 70%, transparent);
+}
+.results-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+/* 残りの秒の字が変わっても「走った線」が動かないように (幅を決め、ボタンは右端) */
+.results-note > .num {
+  display: inline-block;
+  min-width: 9.5em;
+  font-variant-numeric: tabular-nums;
+}
+.results-note .rp-open {
+  margin-left: auto;
+}
+/* 賞金と走行点 (結果のあとにサーバーから届く。走行点の交換所 = exchange.ts) */
+.results-reward {
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--warn);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.results-note .fl-key {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  vertical-align: -1px;
+  background: var(--best);
+}
+@media (max-width: 480px) {
+  table.results td,
+  table.results th {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+  table.results td.num {
+    font-size: 13px;
+  }
+}
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.bc-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+@media (max-height: 500px) {
+  .overlay .bc-frame {
+    padding: 12px 14px 12px 18px;
+  }
+  .bc-head {
+    margin: -12px -14px 8px -18px;
+  }
+  .bc-head h3 {
+    font-size: 18px;
+    padding: 6px 18px;
+  }
+  .bc-actions {
+    margin-top: 8px;
+  }
+  .bc-actions button {
+    min-height: 40px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .countdown-box {
+    margin-bottom: 6px;
+  }
+  .countdown {
+    font-size: 36px;
+  }
+  .lobby-list li {
+    height: 30px;
+  }
+  .lobby-hint {
+    margin-top: 20px;
+  }
+}
+
+/* ピットの札の、持っている組 (新品 ×数 / 使った組 残り %) */
+.pp-t.used .nm {
+  color: var(--ink-dim);
+}
+.pp-t.used.on .nm {
+  color: var(--ink);
+}
+.pp-nosets {
+  grid-column: 2 / -1;
+  align-self: center;
+  padding: 0 6px;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+/* ===== 無線の作戦係 (radio-ui.ts): 塔の下に出る「チーム無線」の字幕 =====
+   上の位置は塔の高さに合わせて JS が決める。幅は画面の半分まで (真ん中の車にかぶせない) */
+.radio-card {
+  position: absolute;
+  left: var(--hud-left);
+  top: calc(var(--hud-top) + 240px);
+  width: min(300px, calc(50vw - 28px));
+  background: var(--hud-bg);
+  border-left: 4px solid var(--rc, var(--accent-2));
+  box-shadow: 0 6px 24px var(--shadow);
+  pointer-events: none;
+  z-index: 1;
+}
+.radio-card.in {
+  animation: rc-in 0.22s ease-out;
+}
+@keyframes rc-in {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hud.pit-open .radio-card {
+  visibility: hidden;
+}
+.rc-head {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.rc-tag {
+  display: grid;
+  place-items: center;
+  padding: 0 12px 0 8px;
+  background: var(--accent-2);
+  color: #04121a;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+.radio-card.urgent .rc-tag {
+  background: var(--warn);
+  color: #1a1400;
+}
+.rc-who {
+  align-self: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+/* 話している印 (4 本の棒が動く) */
+.rc-wave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  padding-right: 8px;
+}
+.rc-wave i {
+  width: 2px;
+  height: 10px;
+  background: var(--accent-2);
+  animation: rc-wave 0.9s ease-in-out infinite;
+}
+.radio-card.urgent .rc-wave i {
+  background: var(--warn);
+}
+.rc-wave i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.rc-wave i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.rc-wave i:nth-child(4) {
+  animation-delay: 0.45s;
+}
+@keyframes rc-wave {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.rc-text {
+  padding: 5px 10px 6px;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.rc-text::before {
+  content: "「";
+  color: var(--ink-dim);
+}
+.rc-text::after {
+  content: "」";
+  color: var(--ink-dim);
+}
+/* ピットのすすめ: 中身と「そうする」 */
+.rc-pit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 10px;
+  border-top: 1px solid var(--panel-line);
+}
+.rc-pk {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--warn);
+}
+.rc-pl {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.rc-yes {
+  pointer-events: auto;
+  min-height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 0;
+  background: var(--warn);
+  color: #1a1400;
+  font-weight: 900;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.rc-yes:hover {
+  background: color-mix(in srgb, var(--warn) 85%, #fff);
+}
+.rc-yes:disabled {
+  opacity: 1;
+}
+.radio-card[data-state="done"] .rc-yes {
+  background: var(--good);
+  color: #04140b;
+}
+@media (max-width: 560px) {
+  .radio-card {
+    width: calc(50vw - 16px);
+  }
+  .rc-text {
+    font-size: 12px;
+    line-height: 1.3;
+    padding: 3px 8px 4px;
+  }
+  .rc-wave {
+    display: none;
+  }
+  /* 狭いときは中身を上の行に、ボタンを下に (縦は真ん中の大きな字にかからないよう低く) */
+  .rc-pit {
+    flex-wrap: wrap;
+    gap: 0 6px;
+    padding: 2px 0 0 8px;
+  }
+  .rc-pl {
+    flex: 1 1 calc(100% - 40px);
+    font-size: 10px;
+  }
+  .rc-yes {
+    flex: 1 1 100%;
+    min-height: 30px;
+  }
+}
+@media (max-height: 500px) {
+  /* 横: 真ん中の大きな字 (周の時間など) にかからない幅 */
+  .radio-card {
+    width: clamp(180px, calc(50vw - 150px), 280px);
+  }
+  .rc-text {
+    font-size: 13px;
+    padding: 3px 9px 4px;
+  }
+  .rc-yes {
+    min-height: 32px;
+  }
+}
+
+/* ===== 走った線 (replay-ui.ts) ===== */
+.overlay.replay-layer {
+  z-index: 6;
+}
+.overlay .rp-frame {
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+}
+.rp-laps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.rp-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 32px;
+  padding: 3px 10px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-line);
+  font-size: 12px;
+}
+.rp-chip b {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 14px;
+}
+.rp-chip .num {
+  color: var(--ink-2);
+}
+.rp-chip.best .num {
+  color: var(--best);
+}
+.rp-chip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #0a0c11;
+}
+.rp-chip.on .num {
+  color: #0a0c11;
+}
+.rp-chip.on.best {
+  background: var(--best);
+  border-color: var(--best);
+  color: #fff;
+}
+.rp-chip.on.best .num {
+  color: #fff;
+}
+.rp-stage {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  background: #0a0d10;
+  border: 1px solid var(--panel-line);
+}
+.rp-canvas {
+  display: block;
+  max-width: 100%;
+}
+.rp-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 14px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.rp-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.rp-grad {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rp-grad i {
+  width: 90px;
+  height: 6px;
+  background: linear-gradient(90deg, rgb(46, 120, 255), rgb(46, 197, 255) 45%, rgb(120, 230, 140) 75%, rgb(255, 210, 31));
+}
+.rp-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rp-tick {
+  width: 3px;
+  height: 14px;
+  background: #ff3b3b;
+}
+@media (max-height: 500px) {
+  .rp-laps {
+    margin-bottom: 4px;
+  }
+  .rp-chip {
+    min-height: 28px;
+    padding: 2px 8px;
+  }
+  .rp-foot {
+    margin-top: 4px;
+  }
+}
+/* 練習: 地図と天気の下に出る「走った線」ボタン (上の位置は JS が決める) */
+.rp-dock {
+  position: absolute;
+  right: max(8px, env(safe-area-inset-right));
+  top: 200px;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 10px 0 0;
+  border: none;
+  border-radius: 0;
+  background: rgba(9, 11, 16, 0.88);
+  box-shadow: 0 6px 24px var(--shadow);
+  font-size: 12px;
+  z-index: 4;
+}
+.rp-dock b {
+  display: grid;
+  place-items: center;
+  padding: 0 10px 0 8px;
+  background: var(--accent-2);
+  color: #04121a;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+.rp-dock span {
+  align-self: center;
+}
+
+/* ===== セクター (区間タイム、sectors-ui.ts) =====
+   時間の下の帯: S1・S2・S3 (済んだ区間の色: 紫 = その場で一番・緑 = 自己ベスト・黄 = 遅い)、下の小さな字は前の周 (練習は差)。
+   切れ目を通ると少しのあいだ区間のタイムと差の札 */
+.secbar {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--hud-top) + 50px);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--hud-bg);
+  box-shadow: 0 6px 24px var(--shadow);
+}
+/* 1 つのセクター: 左に番号の札 (下の線はセクターの色 = 地図と同じ)、右に色の箱 (中にタイム)、下に前の周 (練習は差) */
+.secbar .sc {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: stretch;
+  min-width: 100px;
+}
+.secbar .sk {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  padding: 0 5px;
+  font-family: var(--f-num);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 -3px 0 var(--tint, transparent);
+}
+.secbar .sv {
+  padding: 3px 7px 2px;
+  font-size: 18px;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1.1;
+  text-align: right;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.05);
+}
+.secbar .ss {
+  grid-column: 1 / -1;
+  min-height: 13px;
+  padding: 1px 2px 0;
+  font-size: 11px;
+  line-height: 1.15;
+  text-align: right;
+  color: var(--ink-dim);
+}
+.secbar .sc.wait .sk,
+.secbar .sc.wait .sv {
+  color: var(--ink-dim);
+}
+/* 今のセクター: 札を白く、上に印 (▼)、箱は白い縁で走っているタイム */
+.secbar .sc.live .sk {
+  color: #0a0c11;
+  background: var(--ink);
+}
+.secbar .sc.live .sv {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.secbar .sc.live::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: -9px;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top: 6px solid var(--ink);
+}
+.secbar .sc.purple .sv {
+  background: var(--best);
+  color: #fff;
+}
+.secbar .sc.green .sv {
+  background: var(--good);
+  color: #04140b;
+}
+.secbar .sc.yellow .sv {
+  background: var(--warn);
+  color: #1a1400;
+}
+.secbar .sc.void .sv {
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--ink-2);
+  text-decoration: line-through;
+}
+.secbar .ss.purple {
+  color: var(--best);
+}
+.secbar .ss.green {
+  color: var(--good);
+}
+.secbar .ss.yellow {
+  color: var(--warn);
+}
+.secbar .ss.void {
+  color: var(--ink-dim);
+  text-decoration: line-through;
+}
+.secbar .ss.good {
+  color: var(--good);
+}
+.secbar .ss.bad {
+  color: var(--bad);
+}
+.secbar .sc.ideal {
+  min-width: 0;
+}
+.secbar .sc.ideal .sk {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+  background: none;
+}
+.secbar .sc.ideal .sv {
+  color: var(--ink-2);
+  background: none;
+  font-size: 16px;
+}
+/* 切れ目を通ったときの札: 色の札 (S2) + タイム + 大きな色の差 */
+.secflash {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--hud-top) + 104px);
+  transform: translateX(-50%);
+  display: none;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  background: var(--hud-bg);
+  box-shadow: 0 8px 28px var(--shadow);
+  white-space: nowrap;
+  animation: secflash-in 0.18s ease-out;
+}
+.secflash b {
+  display: grid;
+  place-items: center;
+  padding: 0 12px;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 24px;
+  color: #0a0c11;
+  background: var(--warn);
+}
+.secflash.purple b {
+  background: var(--best);
+  color: #fff;
+}
+.secflash.green b {
+  background: var(--good);
+}
+.secflash.void b {
+  background: var(--ink-dim);
+}
+.secflash .ft {
+  align-self: center;
+  padding: 4px 12px;
+  font-size: 26px;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1;
+}
+.secflash .fd {
+  display: grid;
+  place-items: center;
+  padding: 2px 14px;
+  font-size: 32px;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1;
+}
+.secflash .fd.good {
+  color: #04140b;
+  background: var(--good);
+}
+.secflash .fd.bad {
+  color: #fff;
+  background: var(--bad);
+}
+.secflash small {
+  align-self: center;
+  padding: 0 10px 0 8px;
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+}
+@keyframes secflash-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+}
+/* 塔の行の下の小さな帯 (今の周の済んだ区間の色) */
+.tower li .sm {
+  position: absolute;
+  left: 34px;
+  bottom: 1px;
+  display: flex;
+  gap: 2px;
+  width: 54px;
+  height: 2px;
+  pointer-events: none;
+}
+.tower li .sm i {
+  flex: 1;
+  background: transparent;
+}
+.tower li .sm i.live {
+  background: rgba(255, 255, 255, 0.35);
+}
+.tower li .sm i.purple {
+  background: var(--best);
+}
+.tower li .sm i.green {
+  background: var(--good);
+}
+.tower li .sm i.yellow {
+  background: var(--warn);
+}
+.tower li .sm i.void {
+  background: var(--ink-dim);
+}
+/* スマホの縦: 時間の下 (左上)、地図の左まで広げる。塔はその下へ。前の周と IDEAL は出さない */
+@media (max-width: 560px) {
+  .secbar {
+    left: var(--hud-left);
+    top: calc(var(--hud-top) + 42px);
+    transform: none;
+    width: min(250px, calc(100vw - 96px - var(--hud-left) * 3));
+    gap: 2px;
+    padding: 2px;
+  }
+  .secbar .sc {
+    flex: 1;
+    min-width: 0;
+  }
+  .secbar .sk {
+    min-width: 20px;
+    padding: 0 3px;
+    font-size: 12px;
+    box-shadow: inset 0 -2px 0 var(--tint, transparent);
+  }
+  .secbar .sv {
+    padding: 2px 4px 1px;
+    font-size: 14px;
+  }
+  .secbar .sc.live::before {
+    left: 10px;
+    top: -8px;
+    border-width: 4px;
+    border-top-width: 5px;
+  }
+  .secbar .ss,
+  .secbar .sc.ideal {
+    display: none;
+  }
+  .secbar.practice .ss {
+    display: block;
+    min-height: 0;
+    font-size: 10px;
+  }
+  .secflash {
+    top: 30%;
+  }
+  .tower {
+    top: calc(var(--hud-top) + 48px + 30px);
+  }
+  .hud:has(.secbar.practice) .tower {
+    top: calc(var(--hud-top) + 48px + 42px);
+  }
+  .secflash b {
+    font-size: 19px;
+    padding: 0 9px;
+  }
+  .secflash .ft {
+    font-size: 20px;
+    padding: 3px 9px;
+  }
+  .secflash .fd {
+    font-size: 25px;
+    padding: 2px 10px;
+  }
+}
+/* スマホの横: 時間の下 (上の真ん中) に。前後の差の札はその下へ */
+@media (max-height: 500px) {
+  .secbar {
+    top: calc(var(--hud-top) + 40px);
+    gap: 2px;
+    padding: 2px;
+  }
+  .secbar .sc {
+    min-width: 86px;
+  }
+  .secbar .sk {
+    min-width: 22px;
+    font-size: 13px;
+    box-shadow: inset 0 -2px 0 var(--tint, transparent);
+  }
+  .secbar .sv {
+    padding: 2px 6px 1px;
+    font-size: 15px;
+  }
+  .secbar .sc.live::before {
+    left: 11px;
+    top: -8px;
+    border-width: 4px;
+    border-top-width: 5px;
+  }
+  .secbar .ss,
+  .secbar .sc.ideal {
+    display: none;
+  }
+  .secbar.practice .ss {
+    display: block;
+    min-height: 0;
+    font-size: 10px;
+  }
+  .duel {
+    top: calc(var(--hud-top) + 74px);
+  }
+  /* 札は帯のすぐ下。真ん中の大きな字 (周の時間) と車にかからないように、出ている 3 秒は前後の差の札を隠す */
+  .secflash {
+    top: calc(var(--hud-top) + 76px);
+  }
+  .hud:has(.secflash[style*="flex"]) .duel {
+    visibility: hidden;
+  }
+  .secflash b {
+    font-size: 17px;
+    padding: 0 8px;
+  }
+  .secflash .ft {
+    font-size: 18px;
+    padding: 2px 8px;
+  }
+  .secflash .fd {
+    font-size: 22px;
+    padding: 1px 9px;
+  }
+}
+
+/* 結果の札のセクター: 自分の 1 行 (押すと全員の表) */
+.sec-results {
+  margin-top: 8px;
+}
+.sec-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.sec-mine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.sec-mine small {
+  font-size: 10px;
+  color: var(--ink-dim);
+}
+.sec-mine .purple {
+  color: var(--best);
+}
+.sec-line .sec-toggle {
+  margin-left: auto;
+}
+table.results.sec-table td {
+  height: 26px;
+}
+table.results.sec-table td.purple {
+  color: #fff;
+  background: color-mix(in srgb, var(--best) 70%, transparent);
+  font-weight: 800;
+}
+
+/* 走った線の札のセクター (選んだ周の S1・S2・S3。走った周の中で一番速い区間は紫) */
+.rp-secs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: -2px 0 6px;
+  font-size: 13px;
+}
+.rp-sec {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding-left: 6px;
+  border-left: 3px solid #ffd21f;
+}
+.rp-sec b {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.rp-sec .num {
+  font-weight: 700;
+}
+.rp-sec.best .num {
+  color: var(--best);
+}
+.rp-sec.ideal {
+  border-left-color: var(--ink-dim);
+}
+@media (max-height: 500px) {
+  .rp-secs {
+    margin: -2px 0 3px;
+    font-size: 12px;
+  }
+}
+
+/* ===== チームの 2 台目への作戦の合図 (view.ts の setTeamOrders)。右の列 (地図と天気) の下。
+   下のさわるボタン (.pads) と真ん中の車にかからないように、右上の列に小さく 2 × 2 で並べる ===== */
+.team-orders {
+  background: var(--hud-bg);
+  border-top: 2px solid var(--accent-2, var(--ink));
+  padding: 4px 5px 5px;
+  pointer-events: auto;
+  box-shadow: 0 6px 24px var(--shadow);
+}
+.team-orders .to-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  min-width: 0;
+}
+.team-orders .to-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+}
+.team-orders .to-k {
+  color: var(--ink-dim);
+  flex: none;
+}
+.team-orders .to-nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.team-orders .to-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+}
+.team-orders .to-b {
+  min-height: 30px;
+  padding: 2px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.15;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.team-orders .to-b:hover {
+  border-color: var(--ink);
+}
+.team-orders .to-b.on,
+.team-orders .to-b.sent {
+  background: color-mix(in srgb, var(--accent-2, #ffd166) 35%, transparent);
+  border-color: var(--accent-2, #ffd166);
+}
+.hud.pit-open .team-orders {
+  visibility: hidden;
+}
+/* スマホの縦: 右の列は狭いので字を少し小さく */
+@media (max-width: 560px) {
+  .team-orders {
+    width: 132px;
+    padding: 3px 4px 4px;
+  }
+  .team-orders .to-b {
+    min-height: 28px;
+    font-size: 10px;
+  }
+}
+/* スマホの横: 高さが足りないので 1 列 4 つの細い帯に */
+@media (max-height: 500px) {
+  .team-orders .to-head {
+    margin-bottom: 2px;
+  }
+  .team-orders .to-btns {
+    grid-template-columns: repeat(4, auto);
+  }
+  .team-orders .to-b {
+    min-height: 26px;
+    font-size: 10px;
+  }
+}

@@ -1,0 +1,212 @@
+/* 大会の格と景品 (tourprize.ts)。中継の順位の塔のような札 */
+.tp-grade {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 1px 7px 1px 6px;
+  font-family: var(--f-head);
+  line-height: 1.3;
+  white-space: nowrap;
+  border-left: 3px solid currentColor;
+  background: var(--paper-3);
+  color: var(--ink-2);
+}
+.tp-grade b {
+  font-family: var(--f-ui);
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--ink);
+}
+.tp-grade small {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.tp-grade.g3 {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--paper-3));
+}
+.tp-grade.g2 {
+  color: var(--accent-2);
+}
+.tp-grade.g1 {
+  color: var(--ink-dim);
+}
+.section-title .tp-grade {
+  margin-left: 8px;
+  margin-right: auto;
+}
+
+/* 1 行 (一覧・予選) */
+.tp-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 6px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.tp-gift {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+}
+.tp-pos {
+  display: inline-block;
+  white-space: nowrap;
+  min-width: 26px;
+  padding: 0 5px;
+  font-family: var(--f-num);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  background: var(--warn);
+  color: #0a0c11;
+}
+.tp-pos.part {
+  font-family: var(--f-ui);
+  font-size: 11px;
+  background: var(--ink-faint);
+  color: var(--ink-2);
+}
+.tp-what {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 枠 */
+.tp-list {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tp-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px 7px 0;
+  background: var(--paper-2);
+  border-left: 4px solid var(--ink-faint);
+  font-size: 14px;
+}
+.tp-row .tp-pos {
+  justify-self: start;
+  margin-left: 8px;
+  font-size: 15px;
+  background: var(--paper-3);
+  color: var(--ink);
+}
+.tp-row.p1 {
+  border-left-color: var(--warn);
+}
+.tp-row.p1 .tp-pos {
+  background: var(--warn);
+  color: #0a0c11;
+}
+.tp-row.pod {
+  border-left-color: var(--ink-2);
+}
+.tp-row.part {
+  border-left-color: var(--accent-2);
+}
+.tp-row.part .tp-pos {
+  background: var(--ink-faint);
+}
+
+/* 結果の行 */
+.tp-got {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 3px;
+  white-space: normal;
+}
+.tp-chip {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  background: color-mix(in srgb, var(--warn) 22%, var(--paper-3));
+  color: var(--ink);
+}
+.tp-chip.part {
+  background: var(--ink-faint);
+  color: var(--ink-2);
+}
+.tp-chip.miss {
+  background: color-mix(in srgb, var(--bad) 22%, var(--paper-3));
+  color: var(--ink-2);
+}
+
+/* 一覧の札の中 */
+.ss-tcard .tp-line {
+  grid-column: 1 / -1;
+  padding-left: 12px;
+}
+.ss-tname .tp-grade {
+  align-self: flex-start;
+  margin-bottom: 2px;
+}
+
+/* サーバーが計算する組 */
+.tp-headless {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-left: 4px solid var(--warn);
+  background: var(--paper-2);
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .tp-row {
+    grid-template-columns: 66px minmax(0, 1fr);
+    gap: 8px;
+    font-size: 13px;
+  }
+}
+.tp-inq {
+  margin-top: 8px;
+  padding: 6px 0 6px 8px;
+  border-left: 3px solid var(--warn);
+  background: var(--paper-2);
+}
+
+/* 管理者の入力 */
+.tp-adm {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.tp-adm-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tp-adm-check input {
+  width: auto;
+}
+.tp-adm-tier {
+  padding: 8px;
+  border-left: 4px solid var(--warn);
+  background: var(--paper-2);
+}
+.tp-adm-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.tp-adm-range input {
+  width: 72px;
+}
+.tp-adm-range button {
+  margin-left: auto;
+}

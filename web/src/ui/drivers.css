@@ -1,0 +1,136 @@
+/* 運転手の画面: 得意の札・珍しい運転手・国と年代・得意で絞る (中継の画面の感じ) */
+
+/* 得意ごとの色 */
+.s-rain { --spec: #2ec5ff; }
+.s-quali { --spec: var(--best); }
+.s-tyre { --spec: var(--good); }
+.s-pass { --spec: var(--accent); }
+.s-defend { --spec: #ff8a1f; }
+.s-kerb { --spec: #ff2b3a; --spec-2: #ffffff; }
+.s-start { --spec: #f3f5f8; }
+.s-fuel { --spec: var(--warn); }
+
+.dr-card.rare {
+  border-top-color: var(--warn);
+  background: linear-gradient(180deg, rgba(255, 210, 31, 0.08), transparent 60%), var(--paper-2);
+}
+.dr-card.prize {
+  box-shadow: 0 0 0 1px var(--warn) inset;
+}
+
+.dr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: -2px;
+}
+.dr-tag,
+.dr-rare {
+  display: inline-block;
+  padding: 1px 7px;
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 18px;
+  white-space: nowrap;
+  background: var(--ink-faint);
+  color: var(--ink-2, var(--ink));
+}
+.dr-tag.grow.big {
+  background: rgba(34, 211, 122, 0.16);
+  color: var(--good);
+}
+.dr-rare {
+  background: var(--warn);
+  color: #111;
+  transform: skewX(-10deg);
+}
+
+/* 得意の札: 色の縦帯 + 名前 + 短い説明 */
+.dr-specs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dr-spec {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  padding: 2px 8px 2px 0;
+  background: var(--ink-ghost);
+  border-left: 4px solid var(--spec, var(--accent));
+  font-size: 12px;
+}
+.dr-spec.s-kerb {
+  border-image: repeating-linear-gradient(180deg, var(--spec) 0 5px, var(--spec-2) 5px 10px) 4;
+}
+.dr-spec b {
+  padding: 1px 8px;
+  font-weight: 900;
+  white-space: nowrap;
+  color: var(--spec, var(--ink));
+}
+.dr-spec span {
+  color: var(--ink-dim);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* 得意で絞る */
+.dr-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.dr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--ink-ghost);
+  border: 1px solid var(--panel-line);
+  border-left: 3px solid var(--spec, var(--ink-dim));
+  border-radius: 0;
+  cursor: pointer;
+}
+.dr-chip small {
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+.dr-chip[aria-pressed="true"] {
+  background: var(--spec, var(--accent));
+  border-color: var(--spec, var(--accent));
+  color: #111;
+}
+.dr-chip[aria-pressed="true"] small {
+  color: rgba(0, 0, 0, 0.6);
+}
+.dr-chip:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.dr-filter-note {
+  margin: -4px 0 10px;
+  font-size: 12px;
+}
+.dr-prize-note {
+  margin: 0 0 10px;
+}
+
+@media (max-width: 400px) {
+  .dr-chip {
+    padding: 0 8px;
+    gap: 4px;
+  }
+}

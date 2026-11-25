@@ -1,0 +1,251 @@
+/* ギフトコード (F1 中継風)。遊ぶ人の欄と管理者の画面。色と字体は style.css の :root を使う */
+
+.gift-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  min-width: 0;
+}
+.gift-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--f-num);
+  font-size: 18px; /* iPhone で拡大されない大きさ */
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.gift-input::placeholder {
+  font-family: var(--f-ui);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.gift-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gift-row > button {
+  flex: none;
+}
+.gift-setting .gift-row {
+  flex: 1 1 220px;
+  max-width: 340px;
+}
+.gift-setting .gift-input {
+  font-size: 16px;
+}
+
+/* 受け取ったもの: 中継の「速報」の帯 */
+.gift-got {
+  margin-top: 10px;
+  border-left: 4px solid var(--good);
+  background: linear-gradient(90deg, rgba(34, 211, 122, 0.14), rgba(34, 211, 122, 0) 80%);
+  padding: 10px 12px;
+}
+.gift-got-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.gift-got-head b {
+  font-family: var(--f-head);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+.gift-lines {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.gift-lines li {
+  position: relative;
+  padding-left: 14px;
+  font-weight: 700;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.gift-lines li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 7px;
+  height: 7px;
+  background: var(--good);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+.gift-lines li.later {
+  color: var(--ink-2);
+}
+.gift-lines li.later::before {
+  background: var(--warn);
+}
+.gift-status {
+  margin-top: 8px;
+  font-size: 12px;
+}
+.gift-status:empty {
+  display: none;
+}
+.gift-foot {
+  margin: 8px 0 0;
+  font-size: 11px;
+}
+
+/* 贈られた称号 (チーム名の横。リーグ戦の肩書きとは別の飾り) */
+.gift-title-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border: 1px solid var(--warn);
+  color: var(--warn);
+  font-family: var(--f-ui);
+  font-style: normal;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  line-height: 16px;
+  vertical-align: 3px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+
+/* ---------------------------------------------------------------- 管理者 */
+
+.gift-adm-items {
+  display: grid;
+  gap: 8px;
+}
+.gift-adm-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--panel-line);
+  border-left: 3px solid var(--accent-2);
+  background: var(--ink-ghost);
+}
+.gift-adm-item.deferred {
+  border-left-color: var(--warn);
+}
+.gift-adm-item-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: flex-end;
+  min-width: 0;
+}
+.gift-adm-item-fields > label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 140px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.gift-adm-item-fields > label.kind {
+  flex: 1 1 100%;
+}
+.gift-adm-item-fields input,
+.gift-adm-item-fields select {
+  width: 100%;
+  min-width: 0;
+  font-size: 16px;
+}
+.gift-adm-item-fields input[type="color"] {
+  height: 38px;
+  padding: 2px;
+}
+.gift-adm-item .desc {
+  flex: 1 1 100%;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.gift-adm-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.gift-adm-add select {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.gift-adm-code {
+  font-family: var(--f-num);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  font-size: 16px;
+}
+.gift-adm-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--panel-line);
+}
+.gift-adm-row .lines {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.gift-adm-row .meta {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.gift-adm-row .acts {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gift-state {
+  display: inline-block;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  letter-spacing: 0.04em;
+  background: var(--good);
+  color: #08120c;
+}
+.gift-state.paused {
+  background: var(--warn);
+  color: #1a1400;
+}
+.gift-state.expired,
+.gift-state.used_up {
+  background: var(--ink-faint);
+  color: var(--ink-2);
+}
+.gift-adm-log {
+  margin-top: 6px;
+}
+
+/* 数の調整 (AdminConfig を形から並べる) */
+.cfg-group {
+  grid-column: 1 / -1;
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-line);
+  font-family: var(--f-head);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+}
+.cfg-bool {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+}

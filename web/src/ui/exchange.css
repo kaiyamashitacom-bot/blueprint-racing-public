@@ -1,0 +1,236 @@
+/* 交換所 (F1 中継風)。色と字体は style.css・account.css・team.css の :root と .tm-num を使う。
+   走行点の数は --warn (黄)、交換で減ったのは --accent、たまったのは --good */
+.xc {
+  max-width: 980px;
+}
+.xc-body,
+.xc-view,
+.xc-hist {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.xc-nav {
+  margin: 0;
+}
+
+/* ---- 残高と今日の分 ---- */
+.xc-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  align-items: end;
+}
+.xc-cash {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.xc-cash b {
+  font-size: 26px;
+  line-height: 1.05;
+}
+.xc-cash .xc-big {
+  font-size: 44px;
+  color: var(--warn);
+}
+.xc-cash small {
+  color: var(--ink-dim);
+  font-size: 12px;
+}
+.xc-bar {
+  height: 6px;
+  margin-top: 6px;
+  background: var(--panel-line);
+}
+.xc-bar-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--warn);
+  transition: width 0.3s;
+}
+.xc-rule {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-line);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+/* ---- 交換できる物 ---- */
+.xc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.xc-wide {
+  grid-column: 1 / -1;
+}
+.xc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.xc-item.done {
+  opacity: 0.6;
+}
+.xc-item-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.xc-item-head h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.25;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.xc-price {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.xc-price b {
+  font-size: 28px;
+  line-height: 1;
+  color: var(--warn);
+}
+.xc-price small {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.xc-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.xc-lines li::before {
+  content: "▸ ";
+  color: var(--warn);
+}
+.xc-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.xc-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-line);
+}
+.xc-limit {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.xc-buy {
+  min-width: 112px;
+}
+.xc-buy.armed {
+  animation: xc-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes xc-pulse {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+}
+.xc-why {
+  font-size: 12px;
+}
+
+/* ---- 記録 ---- */
+.xc-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.xc-log li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--panel-line);
+  font-size: 13px;
+}
+.xc-when {
+  color: var(--ink-dim);
+  font-size: 13px;
+}
+.xc-what {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.xc-what small {
+  display: block;
+  color: var(--ink-dim);
+  font-size: 11px;
+}
+.xc-plus {
+  color: var(--good);
+  font-size: 17px;
+}
+.xc-minus {
+  color: var(--accent);
+  font-size: 17px;
+}
+
+/* ---- はじめの画面の見出しの札 ---- */
+.xc-chip {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  min-height: 0;
+  border-left: 3px solid var(--warn);
+  border-radius: 0;
+  white-space: nowrap;
+}
+.xc-chip b {
+  font-size: 20px;
+  line-height: 1;
+  color: var(--warn);
+}
+
+@media (max-width: 560px) {
+  .xc-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .xc-cash .xc-big {
+    font-size: 38px;
+  }
+  .xc-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .xc-log li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .xc-when {
+    grid-column: 1 / -1;
+    font-size: 11px;
+  }
+  /* はじめの画面の見出し: 題の横に入らないので 1 段下げて右へ */
+  .topbar:has(.xc-chip) {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .xc-chip {
+    padding: 3px 8px;
+  }
+}

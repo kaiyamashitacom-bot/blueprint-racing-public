@@ -1,0 +1,473 @@
+/* 管理者の画面の「数の調整」(admin_config.ts)。F1 中継風: 暗い板・細長い数字・赤と黄色の印。375px でも 1 列で読める */
+.cfg [hidden],
+.cfg-sheet-wrap [hidden] {
+  display: none !important;
+}
+.cfg {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.cfg-searchrow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.cfg-search {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+.cfg-found {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.cfg-chips {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.cfg-chips button {
+  flex: none;
+  min-height: 36px;
+}
+.cfg-tools {
+  margin-top: 10px;
+}
+.cfg-tools button {
+  min-height: 40px;
+}
+.cfg-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+}
+.cfg-legend {
+  display: inline-block;
+  padding: 0 6px;
+  border-left: 3px solid;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.cfg-legend.is-custom {
+  border-color: var(--warn);
+}
+.cfg-legend.is-pending {
+  border-color: var(--accent-2);
+}
+
+/* 組 */
+.cfg-sec {
+  scroll-margin-top: 12px;
+}
+.cfg-sec-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 4px 0 8px;
+  padding: 0 0 6px 10px;
+  border-left: 4px solid var(--accent);
+  border-bottom: 1px solid var(--panel-line);
+  font-family: var(--f-head);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 19px;
+  letter-spacing: 0.03em;
+}
+.cfg-sec-title .label {
+  font-style: normal;
+}
+.cfg-count {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--ink-dim);
+  font-style: normal;
+}
+.cfg-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 10px;
+}
+.cfg-subhead {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+/* 1 つの項目 */
+.cfg-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 12px 10px 14px;
+  background: var(--paper-2);
+  border: 1px solid var(--panel-line);
+  border-left: 3px solid transparent;
+}
+.cfg-field.is-custom {
+  border-left-color: var(--warn);
+}
+.cfg-field.is-pending {
+  border-color: color-mix(in srgb, var(--accent-2) 55%, transparent);
+  border-left-color: var(--accent-2);
+  background: color-mix(in srgb, var(--paper-2) 88%, var(--accent-2) 6%);
+}
+.cfg-field.is-bad {
+  border-color: color-mix(in srgb, var(--bad) 60%, transparent);
+  border-left-color: var(--bad);
+}
+.cfg-field.is-bad input {
+  border-color: var(--bad);
+}
+.cfg-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.cfg-name {
+  font-weight: 800;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.cfg-unit,
+.cfg-tag,
+.cfg-flag {
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0 6px;
+  border-radius: 1px;
+  line-height: 18px;
+}
+.cfg-unit {
+  background: var(--ink-faint);
+  color: var(--ink-2);
+}
+.cfg-tag {
+  background: color-mix(in srgb, var(--bad) 25%, transparent);
+  color: var(--ink);
+}
+.cfg-flag {
+  display: none;
+  margin-left: auto;
+  background: var(--warn);
+  color: #111;
+}
+.cfg-field.is-custom .cfg-flag {
+  display: inline-block;
+}
+.cfg-help {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.cfg-inrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cfg-inrow input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  font-family: var(--f-num);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.cfg-live {
+  flex: none;
+  font-size: 13px;
+  color: var(--ink-dim);
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cfg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+}
+.cfg-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cfg-cell-name {
+  font-family: var(--f-num);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+}
+.cfg-cell input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 6px;
+  font-family: var(--f-num);
+  font-size: 16px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.cfg-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  min-height: 44px;
+  align-self: flex-start;
+}
+.cfg-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+}
+.cfg-switch-track {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background: var(--paper-3);
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  transition: background 0.12s;
+}
+.cfg-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ink-2);
+  transition: transform 0.12s;
+}
+.cfg-switch input:checked + .cfg-switch-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.cfg-switch input:checked + .cfg-switch-track::after {
+  transform: translateX(22px);
+  background: #fff;
+}
+.cfg-switch input:focus-visible + .cfg-switch-track {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+.cfg-switch-word {
+  font-weight: 800;
+}
+.cfg-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.cfg-defbtn {
+  margin-left: auto;
+  min-height: 32px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--warn);
+}
+.cfg-err {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--bad);
+}
+.cfg-err:empty {
+  display: none;
+}
+.cfg-ex {
+  margin: 0;
+  padding: 6px 8px;
+  list-style: none;
+  font-size: 12px;
+  color: var(--ink-2);
+  background: rgba(0, 0, 0, 0.22);
+  border-left: 2px solid var(--accent-2);
+}
+.cfg-ex li {
+  overflow-wrap: anywhere;
+}
+.cfg-ex li::before {
+  content: "例 ";
+  font-family: var(--f-num);
+  font-weight: 700;
+  color: var(--accent-2);
+}
+.cfg-empty {
+  text-align: center;
+}
+
+/* 下の帯 */
+.cfg-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+  border-top: 2px solid var(--panel-line);
+  backdrop-filter: blur(6px);
+}
+.cfg-bar.on {
+  border-top-color: var(--accent-2);
+}
+.cfg-bar-text {
+  font-size: 14px;
+}
+
+/* かぶせる板 */
+.cfg-sheet-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+}
+.cfg-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(720px, 100%);
+  max-height: calc(100dvh - 32px);
+  padding: 14px 16px;
+  background: var(--paper-2);
+  border: 1px solid var(--line-strong);
+  border-top: 3px solid var(--accent);
+  box-shadow: 0 20px 60px var(--shadow);
+}
+.cfg-sheet .section-title {
+  margin-bottom: 8px;
+}
+.cfg-sheet .section-title .label {
+  margin-left: auto;
+}
+.cfg-sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cfg-sheet-body p {
+  margin: 0;
+}
+.cfg-sheet-foot {
+  justify-content: flex-end;
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--panel-line);
+}
+.cfg-sheet-foot:empty {
+  display: none;
+}
+.cfg-diff,
+.cfg-errs,
+.cfg-hist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cfg-diff li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--panel-line);
+  font-size: 13px;
+}
+.cfg-diff-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.cfg-diff-vals {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.cfg-diff-vals b {
+  color: var(--accent-2);
+}
+.cfg-errs li {
+  padding: 4px 0 4px 10px;
+  border-left: 3px solid var(--bad);
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+.cfg-hist-row {
+  padding: 10px 0;
+  border-bottom: 2px solid var(--panel-line);
+}
+.cfg-hist-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+.cfg-hist-head button {
+  margin-left: auto;
+  min-height: 36px;
+}
+.cfg-ta {
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
+  font: 13px/1.4 ui-monospace, Menlo, monospace;
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--panel-line);
+  border-radius: 2px;
+  padding: 10px;
+}
+.cfg-imp-out {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 520px) {
+  .cfg-sheet-wrap {
+    padding: 0;
+    align-items: stretch;
+  }
+  .cfg-sheet {
+    max-height: 100dvh;
+    height: 100dvh;
+    border: none;
+    border-top: 3px solid var(--accent);
+    padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
+  }
+  .cfg-tools button {
+    flex: 1 1 calc(50% - 8px);
+  }
+  .cfg-bar .row {
+    width: 100%;
+  }
+  .cfg-bar .row button.go {
+    flex: 1;
+  }
+}

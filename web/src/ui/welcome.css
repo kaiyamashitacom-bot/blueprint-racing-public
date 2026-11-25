@@ -1,0 +1,77 @@
+/* はじめのログインの画面 (welcome.ts)。入力の形は account.css の .acc-* をそのまま使う */
+.welcome {
+  max-width: 460px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+.welcome-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.welcome-head .brand-mark {
+  height: 44px;
+  font-size: 24px;
+  padding: 0 14px 0 10px;
+}
+.welcome-head h1 {
+  margin: 0;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: clamp(26px, 7.5vw, 36px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.welcome-head h1 em {
+  color: var(--accent);
+  font-style: italic;
+}
+.welcome-head p {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+.welcome-note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.welcome-foot {
+  text-align: center;
+}
+.welcome-foot p {
+  margin: 6px auto 0;
+  max-width: 34em;
+  font-size: 11px;
+  line-height: 1.6;
+}
+/* 小さな文字の道 (ボタンに見せすぎない) */
+.welcome-guest {
+  background: none;
+  border: none;
+  padding: 8px 6px;
+  color: var(--ink-2);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.welcome-guest small {
+  margin-left: 0.5em;
+  color: var(--ink-dim);
+  font-size: 11px;
+}
+.welcome-guest:hover {
+  background: none;
+  color: var(--ink);
+}
+/* 横向きのスマホ (高さが無い): 上から並べて、はみ出したら下へ送る */
+@media (max-height: 520px) {
+  .welcome {
+    justify-content: flex-start;
+  }
+}

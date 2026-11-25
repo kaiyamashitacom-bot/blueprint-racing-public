@@ -1,0 +1,278 @@
+/* 部屋の画面 (F1 中継風)。色と字体は style.css の :root、札と入力は team.css・season.css のものを使う */
+
+.rm {
+  max-width: 920px;
+}
+.rm-note {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+/* はじめの画面の「部屋」ボタン (すぐ走るの下) */
+.rooms-btn {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+  text-align: left;
+  border-left: 4px solid var(--accent-2);
+}
+.rooms-btn b {
+  font-size: 16px;
+  font-weight: 900;
+}
+.rooms-btn .dim {
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 0;
+  flex: 1;
+}
+.rooms-btn .label {
+  flex: none;
+}
+
+/* 開く札: 左にコースの絵と選び、右に周回・級・開く */
+.rm-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+.rm-trackpick {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.rm-thumb {
+  display: block;
+  max-width: 100%;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--panel-line);
+}
+.rm-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.rm-laps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rm-step {
+  width: 48px;
+  padding: 0;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+.rm-laps-n {
+  min-width: 2.2ch;
+  text-align: center;
+  font-size: 40px;
+  line-height: 1;
+}
+.rm-cls {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.rm-cls b {
+  font-size: 30px;
+  line-height: 1;
+  color: var(--warn);
+}
+.rm-cls small {
+  margin-left: 4px;
+  font-weight: 500;
+}
+.rm-open {
+  align-self: flex-start;
+  min-width: 180px;
+}
+@media (max-width: 640px) {
+  .rm-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rm-open {
+    align-self: stretch;
+  }
+}
+
+/* 一覧: 周回 | コース・開いた人・段階 | 人数 | 入る */
+.rm-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rm-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto auto;
+  gap: 4px 14px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--panel-line);
+}
+.rm-row:last-child {
+  border-bottom: none;
+}
+.rm-row.mine {
+  box-shadow: inset 3px 0 0 var(--accent);
+  padding-left: 8px;
+}
+.rm-row.blocked .rm-track {
+  color: var(--ink-dim);
+}
+.rm-lapsbig {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: var(--f-num);
+  font-style: italic;
+  line-height: 0.9;
+}
+.rm-lapsbig b {
+  font-size: 34px;
+  font-weight: 800;
+}
+.rm-lapsbig span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0.7;
+}
+.rm-what {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.rm-track {
+  font-size: 16px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rm-meta {
+  font-size: 13px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rm-meta .you {
+  margin-left: 6px;
+  padding: 0 5px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--f-num);
+  font-size: 11px;
+  font-weight: 800;
+}
+.rm-state {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+}
+.rm-phase {
+  display: inline-block;
+  padding: 1px 7px;
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  background: var(--ink-faint);
+  color: var(--ink-2);
+}
+.rm-phase.lobby,
+.rm-phase.idle {
+  background: var(--good);
+  color: #0a0c11;
+}
+.rm-phase.race {
+  background: var(--accent);
+  color: #fff;
+}
+.rm-phase.results {
+  background: var(--warn);
+  color: #0a0c11;
+}
+.rm-seats {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  flex-wrap: wrap;
+  max-width: 70px;
+}
+.rm-seats b {
+  font-size: 26px;
+  line-height: 1;
+}
+.rm-seats small {
+  width: 100%;
+  font-size: 10px;
+}
+@media (max-width: 520px) {
+  .rm-row {
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+  }
+  .rm-row > button {
+    grid-column: 2 / -1;
+    justify-self: stretch;
+  }
+  .rm-lapsbig b {
+    font-size: 28px;
+  }
+}
+
+/* 待合 (online.ts): 開いた部屋の札と「今すぐスタート」 */
+.rm-lobby {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rm-lobby button {
+  min-height: 36px;
+}
+
+/* 管理者の画面 (admin_players.ts): 止める・招く */
+.adm-stop {
+  color: var(--bad);
+}
+.tag.adm-stopped {
+  margin-left: 6px;
+  background: var(--bad);
+  color: #0a0c11;
+}
+.adm-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.adm-switch input {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  accent-color: var(--accent);
+}
+.adm-invite-form input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.adm-invite-form .adm-count {
+  flex: 0 0 76px;
+}
+.adm-code {
+  font-family: var(--f-num);
+  letter-spacing: 0.12em;
+}

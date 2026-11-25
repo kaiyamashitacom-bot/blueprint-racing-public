@@ -1,0 +1,580 @@
+/* リーグ戦の画面 (F1 中継風)。色と字体は style.css・account.css・team.css の :root と .tm-num を使う。
+   王者だけ金 (--lg-gold)。ほかの色は前からの差し色 */
+.lg {
+  --lg-gold: #f5c542;
+  --lg-gold-2: #ffe7a0;
+  max-width: 1100px;
+}
+.lg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lg-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.lg-main,
+.lg-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+@media (max-width: 820px) {
+  /* 1 列: 肩書き → 次のレース → 今日の順位 → 最近のレース → 部の段 */
+  .lg-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lg-main,
+  .lg-side {
+    display: contents;
+  }
+  .lg-hero {
+    order: 0;
+  }
+  .lg-next {
+    order: 1;
+  }
+  .lg-main > :not(.lg-hero) {
+    order: 2;
+  }
+  .lg-ladder {
+    order: 3;
+  }
+}
+.lg-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.lg-empty {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* ---- 自分の部と肩書き (大きく) ---- */
+.lg-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 18px;
+  align-items: center;
+  padding: 18px 18px 18px 22px;
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 55%),
+    linear-gradient(180deg, var(--paper-3), var(--paper-2));
+}
+.lg-div {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  padding-right: 18px;
+  border-right: 2px solid var(--panel-line);
+}
+.lg-div b {
+  font-size: clamp(64px, 18vw, 96px);
+  line-height: 0.85;
+}
+.lg-div span {
+  font-size: 22px;
+  font-weight: 900;
+}
+.lg-div em {
+  margin-left: 6px;
+  font-size: 30px;
+  color: var(--accent-2);
+}
+.lg-titles {
+  min-width: 0;
+}
+.lg-title {
+  font-size: clamp(28px, 8.5vw, 46px);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+.lg-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+.lg-last {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: 8px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--ink-ghost);
+  border-left: 3px solid var(--ink-dim);
+}
+.lg-last.up {
+  border-left-color: var(--good);
+}
+.lg-last.down {
+  border-left-color: var(--bad);
+}
+/* 王者: 金の枠 */
+.lg-hero.champ {
+  clip-path: none;
+  border: 2px solid var(--lg-gold);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6) inset,
+    0 0 24px color-mix(in srgb, var(--lg-gold) 35%, transparent);
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--lg-gold) 22%, transparent) 0%, transparent 60%),
+    linear-gradient(180deg, #2a2412, var(--paper-2));
+}
+.lg-hero.champ::before {
+  background: var(--lg-gold);
+}
+.lg-hero.champ .lg-title {
+  background: linear-gradient(180deg, var(--lg-gold-2), var(--lg-gold) 60%, #b8861b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: clamp(40px, 12vw, 64px);
+}
+.lg-hero.champ .lg-div b {
+  color: var(--lg-gold);
+}
+.lg-hero.champ .label {
+  color: var(--lg-gold);
+}
+
+/* ---- 肩書きの札 (表・メニュー・チームの画面) ---- */
+.lg-tag {
+  display: inline-block;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent-2) 22%, var(--paper-3));
+  border-left: 3px solid var(--accent-2);
+  white-space: nowrap;
+}
+.lg-tag.cpu {
+  background: var(--ink-ghost);
+  border-left-color: var(--ink-dim);
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+.lg-tag.champ {
+  color: #1a1405;
+  background: linear-gradient(180deg, var(--lg-gold-2, #ffe7a0), var(--lg-gold, #f5c542));
+  border-left-color: #b8861b;
+}
+.lg-tag[hidden] {
+  display: none;
+}
+.lg-inline {
+  margin-left: 10px;
+  vertical-align: middle;
+  font-size: 12px;
+}
+
+/* ---- 今日の順位 ---- */
+.lg-table {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.lg-row {
+  display: grid;
+  grid-template-columns: 34px 5px minmax(0, 1fr) 30px 30px 44px;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  padding-right: 8px;
+  background: var(--paper-3);
+}
+.lg-row.head {
+  min-height: 0;
+  background: none;
+  font-family: var(--f-num);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+}
+.lg-row .pos {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 22px;
+}
+.lg-row.head .pos,
+.lg-row.head > span:first-child {
+  background: none;
+  text-align: center;
+}
+.lg-row .bar {
+  align-self: stretch;
+  margin: 6px 0;
+  background: var(--accent-2);
+}
+.lg-row.cpu .bar {
+  background: var(--k-frame);
+}
+.lg-row.mine {
+  background: color-mix(in srgb, var(--accent) 18%, var(--paper-3));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.lg-row.mine .bar {
+  background: var(--accent);
+}
+.lg-row .name {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+}
+.lg-row .name b {
+  font-size: 15px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.lg-row .n {
+  text-align: right;
+  font-size: 18px;
+}
+.lg-row .pts {
+  font-size: 24px;
+  color: var(--warn);
+}
+.lg-row.head .n {
+  font-size: 11px;
+  font-style: normal;
+}
+
+/* ---- 最近のレース ---- */
+.lg-races {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lg-race {
+  background: var(--paper-3);
+}
+.lg-race-head {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 8px 10px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-left: 3px solid var(--accent);
+  border-radius: 0;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.lg-race-head:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.lg-race.skip .lg-race-head {
+  border-left-color: var(--ink-faint);
+}
+.lg-race-head .when {
+  font-size: 16px;
+  white-space: nowrap;
+}
+.lg-race-head .trk {
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lg-race-head .mycars {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font-size: 12px;
+}
+.lg-chip {
+  padding: 1px 7px;
+  background: var(--ink-faint);
+  white-space: nowrap;
+}
+.lg-chip b {
+  font-size: 15px;
+}
+.lg-chip.win {
+  background: color-mix(in srgb, var(--warn) 30%, var(--paper-3));
+}
+.lg-detail {
+  padding: 4px 6px 8px;
+  border-top: 1px solid var(--panel-line);
+}
+.lg-detail[hidden] {
+  display: none;
+}
+.lg-res {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 74px 64px 24px;
+  gap: 6px;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--ink-ghost);
+}
+.lg-res .pos {
+  text-align: center;
+  font-size: 16px;
+}
+.lg-res .who {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.lg-res .who b,
+.lg-res .who small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lg-res .who small {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.lg-res .gap,
+.lg-res .best,
+.lg-res .pts {
+  text-align: right;
+  font-size: 14px;
+}
+.lg-res .best.fl {
+  color: var(--best);
+}
+.lg-res .pts {
+  color: var(--warn);
+}
+.lg-res.mine {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.lg-res.cpu .who b {
+  color: var(--ink-2);
+}
+
+/* ---- 次のレース ---- */
+.lg-clock {
+  display: block;
+  font-size: clamp(48px, 14vw, 64px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.lg-clock-sub {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+/* ---- 部の段 ---- */
+.lg-ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.lg-ladder .section-title {
+  margin-bottom: 9px;
+}
+.lg-step {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 40px;
+  padding-right: 10px;
+  background: var(--paper-3);
+}
+.lg-step .d {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  background: var(--ink-faint);
+}
+.lg-step .t {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 10px;
+}
+.lg-step .t b {
+  font-size: 14px;
+  font-weight: 800;
+}
+.lg-step .t small {
+  font-size: 11px;
+  color: var(--ink-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lg-step .you {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 6px;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.lg-step.mine {
+  background: color-mix(in srgb, var(--accent) 18%, var(--paper-3));
+}
+.lg-step.mine .d {
+  background: var(--accent);
+}
+.lg-step.champ {
+  border: 1px solid var(--lg-gold);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--lg-gold) 20%, var(--paper-3)), var(--paper-3));
+}
+.lg-step.champ .d {
+  background: var(--lg-gold);
+  color: #1a1405;
+}
+.lg-step.champ .t b {
+  color: var(--lg-gold);
+}
+
+/* ---- メニューの札 ---- */
+.lg-menu-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.lg-menu-clock {
+  font-size: 26px;
+  line-height: 1;
+}
+.lg-menu button.primary {
+  width: 100%;
+}
+/* 上の帯の 賭け (右の端) */
+.lg .tm-top .lg-bets {
+  margin-left: auto;
+}
+/* リーグ戦を見る + 賭け (賭けの画面へ) */
+.lg-menu-btns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.lg-menu-btns .lg-menu-bets {
+  padding: 4px 18px;
+}
+
+/* スマホ (375 px): 表の列を詰める */
+@media (max-width: 420px) {
+  .lg-row {
+    grid-template-columns: 30px 4px minmax(0, 1fr) 22px 22px 36px;
+    gap: 6px;
+    padding-right: 6px;
+  }
+  .lg-row .pos {
+    font-size: 19px;
+  }
+  .lg-row .pts {
+    font-size: 21px;
+  }
+  .lg-res {
+    grid-template-columns: 22px minmax(0, 1fr) 62px 0 22px;
+    gap: 5px;
+  }
+  .lg-res .best {
+    display: none;
+  }
+  .lg-hero {
+    gap: 6px 12px;
+    padding: 14px 12px 14px 18px;
+  }
+  .lg-div {
+    padding-right: 12px;
+  }
+  .lg-race-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .lg-race-head .mycars {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+/* スマホ横 (高さ 520 以下): 2 列に戻して今日の順位を肩書きのすぐ下に。肩書きと次のレースを小さく
+   (QA 2 回目: 740×360 で大きな残り時間が順位を画面の外へ押し出していた) */
+@media (orientation: landscape) and (max-height: 520px) {
+  .lg-grid {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+  .lg-body,
+  .lg-main,
+  .lg-side {
+    gap: 10px;
+  }
+  .lg-main,
+  .lg-side {
+    display: flex;
+  }
+  .lg-hero {
+    gap: 4px 12px;
+    padding: 8px 12px 8px 16px;
+  }
+  .lg-div {
+    padding-right: 12px;
+  }
+  .lg-div b {
+    font-size: 44px;
+  }
+  .lg-div span {
+    font-size: 16px;
+  }
+  .lg-div em {
+    font-size: 20px;
+  }
+  .lg-title {
+    font-size: 24px;
+  }
+  .lg-sub {
+    margin-top: 2px;
+    font-size: 12px;
+  }
+  .lg-last {
+    margin-top: 4px;
+  }
+  .lg-next .section-title {
+    margin-bottom: 4px;
+  }
+  .lg-clock {
+    font-size: 30px;
+  }
+  .lg-clock-sub {
+    margin-top: 2px;
+    font-size: 12px;
+  }
+  .lg-next .lg-note {
+    display: none;
+  }
+}

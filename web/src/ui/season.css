@@ -1,0 +1,584 @@
+/* 季節・大会・管理者の画面 (F1 中継風)。色と字体は style.css の :root、板と帯は team.css (.tm-*) を使う */
+
+.ss {
+  max-width: 1040px;
+}
+.ss-when {
+  margin-left: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.ss-when b {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--warn);
+}
+.ss-foot {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+.ss-scroll {
+  overflow-x: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+
+/* 級の札の色 (1 級 = 金 … 5 級 = 灰) */
+.ss .c1 {
+  --cls: #ffd21f;
+}
+.ss .c2 {
+  --cls: #c5cbd6;
+}
+.ss .c3 {
+  --cls: #ff8a1f;
+}
+.ss .c4 {
+  --cls: #2ec5ff;
+}
+.ss .c5 {
+  --cls: #7b8496;
+}
+
+/* 自分の札 */
+.ss-me {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 16px;
+  align-items: center;
+}
+.ss-me .ss-figs {
+  grid-column: 1 / -1;
+}
+.ss-me-anon {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+.ss-cls {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  background: var(--cls, var(--ink-faint));
+  color: #0a0c11;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  line-height: 1;
+}
+.ss-cls b {
+  font-size: 44px;
+}
+.ss-cls span {
+  font-weight: 900;
+  font-size: 12px;
+  margin-top: -6px;
+}
+.ss-me-team {
+  font-size: clamp(20px, 5.5vw, 28px);
+  font-weight: 900;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.ss-me-team small {
+  margin-left: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+.ss-me-note {
+  font-size: 12px;
+}
+
+/* 数字の札の並び */
+.ss-figs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 8px;
+}
+.ss-fig {
+  padding: 6px 10px 8px;
+  background: var(--paper-3);
+  border-left: 3px solid var(--ink-faint);
+  min-width: 0;
+}
+.ss-fig .label {
+  display: block;
+  font-size: 11px;
+}
+.ss-fig b {
+  font-size: 22px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.ss-fig small {
+  font-size: 12px;
+}
+
+/* 級を選ぶ */
+.ss-clspick {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.ss-clspick button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 6px 4px;
+  border-top: 4px solid var(--cls);
+  border-radius: 0;
+  line-height: 1.1;
+}
+.ss-clspick button b {
+  font-size: 26px;
+}
+.ss-clspick button span {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.ss-clspick button.on {
+  background: color-mix(in srgb, var(--cls) 22%, var(--paper-3));
+  border-color: var(--cls);
+}
+
+/* 順位の表 (race.css の table.results に足す) */
+table.ss-table td.who small {
+  font-weight: 500;
+}
+table.ss-table tr.me td {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+table.ss-table tr.up td.pos {
+  box-shadow: inset 0 -3px 0 var(--good);
+}
+table.ss-table tr.down td.pos {
+  box-shadow: inset 0 -3px 0 var(--bad);
+}
+table.ss-table tr.gold td.pos {
+  background: #ffd21f;
+  color: #0a0c11;
+}
+table.ss-table tr.dq td {
+  color: var(--ink-dim);
+}
+table.ss-table .tag {
+  margin-left: 6px;
+}
+table.ss-table .tag.bad {
+  background: color-mix(in srgb, var(--bad) 30%, transparent);
+  color: #fff;
+}
+table.ss-table .tag.fl {
+  background: var(--best);
+  color: #fff;
+}
+
+/* 前の季節のチャンピオン */
+.ss-champs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ss-champ {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  background: var(--paper-3);
+  border-left: 5px solid var(--ink-faint);
+  min-width: 0;
+}
+.ss-champ b {
+  font-size: 20px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+.ss-champ.gold {
+  border-left-color: #ffd21f;
+  background: linear-gradient(90deg, rgba(255, 210, 31, 0.16), var(--paper-3) 70%);
+}
+.ss-champ.gold .label {
+  color: #ffd21f;
+}
+
+/* はんこ帳 */
+.ss-stamps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.ss-stamp {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 6px;
+  padding: 8px 10px;
+  border: 2px solid var(--ink-faint);
+  background: var(--paper-3);
+  transform: rotate(-1deg);
+}
+.ss-stamp:nth-child(2n) {
+  transform: rotate(1deg);
+}
+.ss-stamp b {
+  font-weight: 900;
+}
+.ss-stamp span {
+  font-size: 18px;
+  color: var(--ink-2);
+}
+.ss-stamp small {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.ss-stamp.r2 {
+  border-color: var(--accent-2);
+}
+.ss-stamp.r3 {
+  border-color: #ffd21f;
+  box-shadow: 0 0 0 1px rgba(255, 210, 31, 0.3), 0 0 18px rgba(255, 210, 31, 0.15);
+}
+.ss-stamp.now::after {
+  content: "今季";
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  padding: 0 5px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* 季節の記録 */
+.ss-hist {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px 8px 0;
+  background: var(--paper-3);
+  border-left: 5px solid var(--ink-faint);
+}
+.ss-hist + .ss-hist {
+  margin-top: 6px;
+}
+.ss-hist .s {
+  text-align: center;
+  font-weight: 900;
+  font-size: 13px;
+}
+.ss-hist .m .row {
+  margin: 4px 0 2px;
+  gap: 4px;
+}
+.ss-hist .p {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-family: var(--f-num);
+  font-weight: 800;
+  font-style: italic;
+}
+.ss-hist .p small {
+  color: var(--warn);
+  font-size: 13px;
+}
+.ss-hist.star {
+  border-left-color: #ffd21f;
+  background: linear-gradient(90deg, rgba(255, 210, 31, 0.18), var(--paper-3) 60%);
+}
+.ss-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--ink-faint);
+  color: var(--ink-2);
+}
+.ss-badge.gold {
+  background: #ffd21f;
+  color: #0a0c11;
+}
+
+/* メニューの入り口 */
+.ss-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+}
+.ss-menu-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--accent);
+  border-radius: 0;
+  text-align: left;
+}
+.ss-menu-btn b {
+  font-size: 18px;
+  font-weight: 900;
+}
+.ss-menu-btn small {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+/* 大会の一覧 */
+.ss-tcard {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  grid-template-areas: "date name phase" "date name entries";
+  gap: 2px 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px 10px 0;
+  text-align: left;
+  border-radius: 0;
+  border-left: 5px solid var(--accent);
+  background: var(--paper-2);
+}
+.ss-tcard.done,
+.ss-tcard.cancelled {
+  border-left-color: var(--ink-faint);
+  opacity: 0.85;
+}
+.ss-tdate {
+  grid-area: date;
+  padding-left: 12px;
+}
+.ss-tdate b {
+  font-size: 16px;
+}
+.ss-tname {
+  grid-area: name;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ss-tname b {
+  font-size: 17px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+.ss-tname small {
+  font-size: 12px;
+}
+.ss-tcard .ss-phase {
+  grid-area: phase;
+  justify-self: end;
+}
+.ss-tentries {
+  grid-area: entries;
+  justify-self: end;
+  font-size: 12px;
+}
+@media (max-width: 560px) {
+  .ss-tcard {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "date phase" "name name" "entries entries";
+  }
+  .ss-tentries {
+    justify-self: start;
+    padding-left: 12px;
+  }
+  .ss-tname {
+    padding-left: 12px;
+  }
+}
+.ss-phase {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  background: var(--ink-faint);
+  color: var(--ink-2);
+}
+.ss-phase.qualifying {
+  background: var(--accent-2);
+  color: #0a0c11;
+}
+.ss-phase.lobby,
+.ss-phase.racing {
+  background: var(--good);
+  color: #0a0c11;
+}
+.ss-phase.grid_set {
+  background: var(--warn);
+  color: #0a0c11;
+}
+
+/* 1 つの大会 */
+.ss-thead-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.ss-thead-main h3 {
+  margin: 0;
+  font-size: clamp(20px, 5vw, 26px);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+.ss-thead .ss-fig b {
+  font-size: 18px;
+}
+.ss-tyre {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid var(--c);
+  font-family: var(--f-num);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  flex: none;
+}
+.ss-sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+.ss-sets button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.ss-sets button.on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--paper-3));
+}
+.ss-car {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  margin: 10px 0;
+  font-size: 14px;
+}
+.ss-alloc {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ss-arow {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 40px 32px 40px;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+}
+.ss-arow b {
+  text-align: center;
+  font-size: 20px;
+}
+.ss-alloc .go {
+  margin-top: 6px;
+}
+.ss-plan {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+.ss-plan select {
+  min-width: 0;
+  width: 100%;
+}
+.ss-plan .toggle {
+  grid-column: 2 / -1;
+  justify-self: start;
+}
+.ss-join {
+  border-left: 0;
+}
+.ss-join::before {
+  background: var(--good);
+}
+
+/* 管理者 */
+.ss-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px 14px;
+}
+.ss-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 0;
+}
+.ss-field input,
+.ss-field select {
+  width: 100%;
+  min-width: 0;
+}
+.ss-field > small {
+  font-weight: 500;
+  font-size: 11px;
+}
+.ss-field.changed input {
+  border-color: var(--warn);
+}
+.ss-adm-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--panel-line);
+}
+.ss-adm-row small {
+  display: block;
+  font-size: 12px;
+}
+@media (max-width: 560px) {
+  .ss-adm-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .ss-adm-row .row {
+    grid-column: 1 / -1;
+  }
+}
+.ss-dev summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+.ss-dev .row {
+  margin: 10px 0;
+}
+.ss-dev input {
+  width: 90px;
+}
+.ss-dev pre {
+  max-height: 220px;
+  overflow: auto;
+  font-size: 11px;
+  white-space: pre-wrap;
+  margin: 0;
+}

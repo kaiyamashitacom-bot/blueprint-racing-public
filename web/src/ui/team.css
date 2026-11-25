@@ -1,0 +1,842 @@
+/* チーム・運転手・研究・市場の画面 (F1 中継風)。色と字体は style.css と account.css の :root を使う */
+
+.tm {
+  max-width: 1000px;
+}
+.tm-num {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* 見出し: もどる・題・財布・知らせ */
+.tm-top {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+.tm-top .label {
+  margin-left: 0;
+}
+.tm-wallet {
+  margin-left: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.tm-wallet b {
+  font-size: 24px;
+  color: var(--warn);
+  line-height: 1;
+}
+.tm-wallet small {
+  font-size: 11px;
+}
+.tm-bell {
+  position: relative;
+}
+.tm-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+  border-radius: 10px;
+}
+.tm-badge[hidden] {
+  display: none;
+}
+
+/* 切りかえの帯 */
+.tm-nav {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 16px;
+  border-bottom: 2px solid var(--panel-line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tm-nav button {
+  flex: 1 0 auto;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  margin-bottom: -2px;
+  color: var(--ink-dim);
+  font-size: 15px;
+  font-weight: 800;
+  padding: 8px 14px;
+}
+.tm-nav button.on {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+.tm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tm-gate p {
+  margin: 0 0 12px;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+/* 2 列 (スマホでは 1 列) */
+.tm-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+@media (max-width: 720px) {
+  .tm-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* チームの札: 紋章 + 名前 */
+.tm-plate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+.tm-plate .names {
+  min-width: 0;
+}
+.tm-plate .team {
+  font-size: clamp(22px, 6vw, 30px);
+  font-weight: 900;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.tm-plate .sub {
+  color: var(--ink-dim);
+  font-size: 13px;
+}
+.tm-emblem {
+  display: block;
+  flex: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+/* 2 台の札 */
+.tm-car {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: center;
+  padding: 10px 12px 10px 0;
+  background: var(--paper-3);
+  border-left: 5px solid var(--accent);
+}
+.tm-car + .tm-car {
+  margin-top: 8px;
+}
+.tm-car.second {
+  border-left-color: var(--accent-2);
+}
+.tm-car .no {
+  grid-row: span 3;
+  text-align: center;
+  font-size: 30px;
+  line-height: 1;
+}
+.tm-car .who {
+  font-weight: 900;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.tm-car .who small {
+  font-weight: 600;
+  color: var(--ink-dim);
+  margin-left: 6px;
+  font-size: 12px;
+}
+.tm-car select {
+  width: 100%;
+  min-width: 0;
+}
+.tm-car .hint {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+/* 整備の組 */
+.tm-pips {
+  display: flex;
+  gap: 4px;
+  margin: 4px 0 10px;
+}
+.tm-pips i {
+  flex: 1;
+  height: 10px;
+  background: var(--ink-faint);
+  transform: skewX(-18deg);
+}
+.tm-pips i.on {
+  background: var(--accent-2);
+}
+.tm-figs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.tm-fig {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 10px;
+}
+.tm-fig .label {
+  display: block;
+}
+.tm-fig b {
+  font-size: 26px;
+  line-height: 1.1;
+}
+.tm-fig b.good {
+  color: var(--good);
+}
+
+/* 紋章の編集 */
+.tm-em-edit {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 480px) {
+  .tm-em-edit {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+  .tm-em-edit > div {
+    width: 100%;
+  }
+}
+.tm-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.tm-picks button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 4px;
+  display: grid;
+  place-items: center;
+  background: var(--paper-3);
+}
+.tm-picks button.on {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.tm-picks .sw {
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.tm-picks.colors button {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+/* 運転手 */
+.tm-drivers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+@media (max-width: 400px) {
+  .tm-drivers {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.tm-driver {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--paper-2);
+  border: 1px solid var(--panel-line);
+  border-top: 3px solid var(--accent-2);
+}
+.tm-driver.mine {
+  border-top-color: var(--accent);
+}
+.tm-driver .head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.tm-driver .nm {
+  font-size: 18px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+.tm-driver .ovr {
+  margin-left: auto;
+  font-size: 34px;
+  line-height: 1;
+}
+.tm-driver .ovr small {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin-right: 4px;
+  font-style: normal;
+}
+.tm-driver .foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.tm-driver .foot .price {
+  font-size: 22px;
+  margin-right: auto;
+}
+.tm-stat {
+  display: grid;
+  grid-template-columns: 7.5em minmax(0, 1fr) 2.2em;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+.tm-stat .k {
+  color: var(--ink-2);
+}
+.tm-stat b {
+  text-align: right;
+  font-size: 17px;
+}
+.tm-bar {
+  position: relative;
+  height: 8px;
+  background: var(--ink-ghost);
+}
+.tm-bar i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--ink);
+}
+.tm-bar i.pot {
+  background: color-mix(in srgb, var(--good) 40%, transparent);
+}
+.tm-kv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.tm-kv b {
+  color: var(--ink);
+}
+
+/* 研究 */
+.tm-active {
+  display: grid;
+  gap: 8px;
+}
+.tm-progress {
+  position: relative;
+  height: 14px;
+  background: var(--ink-ghost);
+  overflow: hidden;
+}
+.tm-progress i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--accent-2), color-mix(in srgb, var(--accent-2) 60%, #fff));
+}
+.tm-active .when {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.tm-active .when b {
+  font-size: 28px;
+  line-height: 1;
+}
+.tm-kind {
+  margin: 0 0 8px;
+}
+.tm-kind h4 {
+  margin: 0 0 6px;
+  font-family: var(--f-num);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: var(--ink-dim);
+}
+.tm-tree {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 720px) {
+  .tm-tree {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.tm-node {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--paper-2);
+  border: 1px solid var(--panel-line);
+  border-left: 4px solid var(--ink-faint);
+  min-width: 0;
+}
+.tm-node.open {
+  border-left-color: var(--accent-2);
+}
+.tm-node.active {
+  border-left-color: var(--warn);
+}
+.tm-node.done {
+  border-left-color: var(--good);
+}
+.tm-node.locked,
+.tm-node.busy {
+  opacity: 0.62;
+}
+.tm-node .nm {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 900;
+}
+.tm-node .tier {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 0 6px;
+  background: var(--ink);
+  color: var(--paper);
+}
+.tm-node .note {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.tm-node .spec {
+  font-family: var(--f-num);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.tm-node .act {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.tm-node .act .price {
+  font-size: 19px;
+  margin-right: auto;
+}
+.tm-state {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-dim);
+}
+.tm-state.good {
+  color: var(--good);
+}
+.tm-state.short {
+  color: var(--warn);
+}
+/* 押せないボタンのわけ (お金が足りない など) */
+.tm-why {
+  flex-basis: 100%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--warn);
+  text-align: right;
+}
+.tm-why[hidden] {
+  display: none;
+}
+
+/* 市場 */
+.tm-sub {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tm-sub button.on {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.tm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tm-item {
+  display: grid;
+  grid-template-columns: 5px minmax(0, 1fr) auto;
+  gap: 0 12px;
+  align-items: center;
+  padding: 8px 10px 8px 0;
+  background: var(--paper-2);
+  border: 1px solid var(--panel-line);
+}
+.tm-item .bar {
+  align-self: stretch;
+  background: var(--k-frame);
+}
+.tm-item .bar.design {
+  background: var(--accent-2);
+}
+.tm-item .nm {
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.tm-item .meta {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.tm-item .tm-side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.tm-item .price {
+  font-size: 22px;
+  text-align: right;
+  line-height: 1.1;
+}
+.tm-item .price small {
+  display: block;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+.tm-item input {
+  width: 6.5em;
+  font-size: 16px;
+}
+@media (max-width: 560px) {
+  .tm-item {
+    grid-template-columns: 5px minmax(0, 1fr);
+    gap: 8px 10px;
+  }
+  .tm-item .tm-side {
+    grid-column: 2;
+  }
+}
+.tm-mode {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--ink-faint);
+  color: var(--ink-2);
+  vertical-align: 2px;
+}
+.tm-mode.auction {
+  background: var(--warn);
+  color: var(--paper);
+}
+.tm-mode.top {
+  background: var(--good);
+  color: var(--paper);
+}
+.tm-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+@media (max-width: 560px) {
+  .tm-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.tm-form .acc-field select,
+.tm-form .acc-field input {
+  width: 100%;
+  font-size: 16px;
+}
+.tm-form .wide {
+  grid-column: 1 / -1;
+}
+.tm-empty {
+  padding: 14px;
+  color: var(--ink-dim);
+  font-size: 13px;
+  background: var(--paper-2);
+  border: 1px dashed var(--panel-line);
+}
+
+/* 知らせの札 (下から) */
+.tm-sheet-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.tm-sheet {
+  width: min(560px, 100%);
+  max-height: 78vh;
+  overflow: auto;
+  background: var(--paper-2);
+  border-top: 4px solid var(--accent);
+  padding: 14px 16px max(16px, env(safe-area-inset-bottom));
+}
+.tm-sheet .section-title button {
+  margin-left: 8px;
+}
+.tm-notices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tm-notice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  text-align: left;
+  font-weight: 500;
+  background: var(--paper-3);
+  border-left: 4px solid transparent;
+}
+.tm-notice.new {
+  border-left-color: var(--accent);
+}
+.tm-notice .t {
+  font-weight: 900;
+}
+.tm-notice .x {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.tm-notice .when {
+  grid-row: 1;
+  grid-column: 2;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+/* メニューのチームの段 */
+.tm-menu {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.tm-menu button {
+  position: relative;
+  padding: 8px 4px;
+  font-size: 13px;
+}
+@media (max-width: 380px) {
+  .tm-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .tm-top .label {
+    display: none;
+  }
+  .tm-wallet b {
+    font-size: 20px;
+  }
+}
+
+/* ---- 研究の画面の札 (研究の木 / 進化 / 限界突破) と 進化の木 ---- */
+.tm-tabs {
+  display: flex;
+  gap: 0;
+  margin: 0 0 10px;
+  border-bottom: 2px solid var(--panel-line);
+}
+.tm-tabs button {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 8px 12px 6px;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  color: var(--ink-dim);
+  cursor: pointer;
+  text-align: left;
+}
+.tm-tabs button b {
+  font-size: 15px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.tm-tabs button .label {
+  font-size: 11px;
+}
+.tm-tabs button.on {
+  color: var(--ink);
+  border-bottom-color: var(--accent, #e10600);
+}
+.tm-kind .tm-kh {
+  border-left: 5px solid var(--kc, var(--ink-faint));
+  padding-left: 8px;
+}
+.tm-node .tier.gold {
+  background: #ffc94a;
+  color: #111;
+}
+.tm-node .chip,
+.tm-ident .chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border: 1px solid var(--kc, var(--line-strong));
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.tm-ident {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tm-ident .chip {
+  font-size: 13px;
+  padding: 3px 8px;
+}
+.tm-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.tm-evo {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 8px 0;
+  border-top: 1px solid var(--panel-line);
+}
+.tm-evo .src {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--paper-2);
+  border-left: 4px solid var(--kc, var(--ink-faint));
+  position: relative;
+}
+.tm-evo .src::after {
+  content: "→";
+  position: absolute;
+  right: -14px;
+  top: 8px;
+  font-weight: 900;
+  color: var(--ink-dim);
+}
+.tm-evo .src .tier {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 0 6px;
+  background: var(--ink);
+  color: var(--paper);
+}
+.tm-evo .fork {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--warn);
+}
+.tm-evo .outs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  padding-left: 10px;
+}
+.tm-evo.branch .outs {
+  border-left: 2px dashed var(--warn);
+}
+@media (max-width: 720px) {
+  .tm-evo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tm-evo .src::after {
+    content: "↓";
+    right: 10px;
+  }
+  .tm-evo .outs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.tm-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.tm-item {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 3px;
+  padding: 10px 12px;
+  background: var(--paper-2);
+  border: 1px solid var(--panel-line);
+  border-left: 4px solid var(--ink-faint);
+  opacity: 0.7;
+}
+.tm-item.have {
+  border-left-color: #ffc94a;
+  opacity: 1;
+}
+.tm-item b {
+  font-size: 24px;
+  line-height: 1;
+}
+.tm-item .nm {
+  font-weight: 900;
+}
+.tm-item .note {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.tm-item button {
+  align-self: flex-start;
+  margin-top: 4px;
+}

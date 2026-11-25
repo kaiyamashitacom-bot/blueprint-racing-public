@@ -1,0 +1,21 @@
+{
+  "name": "blueprint-racing",
+  "private": true,
+  "type": "module",
+  "workspaces": ["shared", "web", "server"],
+  "scripts": {
+    "dev": "mkdir -p web/dist && concurrently -k -n web,server -c cyan,magenta \"npm run dev -w web\" \"npm run dev -w server\"",
+    "build": "npm run build -w web",
+    "test": "vitest run",
+    "typecheck": "tsc -p shared && tsc -p web && tsc -p server"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261125.1",
+    "concurrently": "^10.0.7",
+    "playwright": "^1.65.1",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.168.0"
+  }
+}

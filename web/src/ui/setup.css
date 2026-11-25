@@ -1,0 +1,363 @@
+/* 走る前の準備の札 (待合と練習の前)。中継の「作戦」の画面のように:
+   小さな見出しの帯、タイヤは色の輪の大きな板、燃料と天気は区切った帯 */
+.setup {
+  display: flex;
+  flex-direction: column;
+}
+.setup-h {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 14px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--panel-line);
+}
+.setup-h:first-child {
+  margin-top: 0;
+}
+.setup-h .label {
+  color: var(--ink);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+}
+.setup-h .label::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 11px;
+  margin-right: 7px;
+  background: var(--accent);
+  transform: skewX(-12deg);
+  vertical-align: -1px;
+}
+.setup-h .dim {
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* タイヤ: 5 つの板。選んだものは白い縁と下の色の帯 */
+.tire-pick {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+.tire-opt {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: 0;
+  padding: 10px 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.045);
+  font-weight: 700;
+}
+.tire-opt .tire-badge {
+  width: 38px;
+  height: 38px;
+  font-size: 19px;
+}
+.tire-opt .nm {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tire-opt .life {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+.tire-opt:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.tire-opt.on {
+  border-color: var(--ink);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 -3px 0 var(--ink);
+}
+.tire-opt.on .life {
+  color: var(--ink);
+}
+/* 今の路面に合うタイヤ: 右上の小さな緑の札 */
+.tire-opt .fit {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0 5px;
+  background: var(--good);
+  color: #06130c;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 15px;
+}
+
+/* 持っていく組 (レース): 見出しの右に「2 / 3 組」と おまかせ。板の下に − ×数 + */
+.setup-h .label,
+.alloc-count,
+.setup-h .alloc-auto {
+  flex: none;
+  white-space: nowrap;
+}
+/* 説明は余った幅だけ使う (狭い画面で札を押し広げない) */
+.setup-h .alloc-hint {
+  flex: 1 1 0;
+  width: 0;
+}
+.alloc-count {
+  margin-left: auto;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.alloc-count small {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-dim);
+}
+.alloc-count.full small {
+  color: var(--ink-2);
+}
+.setup-h .alloc-auto {
+  align-self: center;
+  min-height: 0;
+  padding: 3px 8px;
+  border: 1px solid var(--panel-line);
+  border-radius: 0;
+  background: transparent;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.setup-h .alloc-auto.on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #0a0c11;
+}
+.tire-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.tire-slot .tire-opt {
+  flex: 1;
+}
+.tire-opt.none {
+  background: rgba(255, 255, 255, 0.02);
+}
+.tire-opt.none .tire-badge,
+.tire-opt.none .nm,
+.tire-opt.none .life {
+  opacity: 0.4;
+}
+.tire-step {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.045);
+}
+.tire-step .st {
+  min-height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--ink);
+}
+.tire-step .st:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+.tire-step .num {
+  min-width: 2.2em;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 800;
+}
+.tire-slot.empty .tire-step .num {
+  color: var(--ink-dim);
+}
+.tire-slot:not(.empty) .tire-step {
+  box-shadow: inset 0 -2px 0 var(--ink-dim);
+}
+.alloc-err,
+.alloc-note {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.alloc-err {
+  border-left: 3px solid var(--bad);
+  background: rgba(255, 90, 95, 0.1);
+  color: var(--ink);
+}
+.alloc-note {
+  border-left: 3px solid #4ea8de;
+  color: var(--ink-dim);
+}
+
+/* 燃料・天気: 区切った帯のボタン */
+.setup .seg {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+}
+.setup .seg button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 48px;
+  padding: 6px 4px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.045);
+}
+.setup .seg button b {
+  font-size: 13px;
+}
+.setup .seg button .num {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+.setup .seg button:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.setup .seg button.on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #0a0c11;
+}
+.setup .seg button.on .num {
+  color: rgba(10, 12, 17, 0.7);
+}
+
+/* 予報: 今の路面 + この先の予報を横に並べる */
+.forecast-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 12px;
+}
+.forecast-line > span {
+  padding: 5px 9px;
+  background: rgba(255, 255, 255, 0.045);
+  white-space: nowrap;
+}
+.forecast-line .sky {
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 800;
+}
+.forecast-line .fc {
+  border-left: 3px solid #4ea8de;
+  color: var(--ink-2);
+}
+
+@media (max-width: 420px) {
+  .tire-opt {
+    padding: 8px 1px 6px;
+  }
+  .tire-opt .tire-badge {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .tire-opt .nm {
+    font-size: 11px;
+  }
+  .tire-opt .life {
+    font-size: 12px;
+  }
+  .setup .seg button .num {
+    font-size: 11px;
+  }
+  .setup-h .dim {
+    font-size: 11px;
+  }
+  .tire-step .st {
+    min-height: 34px;
+    font-size: 16px;
+  }
+  .tire-step .num {
+    min-width: 1.8em;
+    font-size: 13px;
+  }
+}
+
+/* 低い横長の画面 (スマホの横): 練習の札はタイヤを左、燃料と天気を右に並べて、スクロールなしで「走る」まで見せる */
+@media (max-height: 500px) and (min-width: 600px) {
+  .overlay .setup-frame {
+    max-width: 780px;
+  }
+  .setup-frame .setup {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    column-gap: 16px;
+    align-items: start;
+  }
+  .setup-frame .setup > :nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .setup-frame .setup > :nth-child(2) {
+    grid-column: 1;
+    grid-row: 2 / span 3;
+  }
+  .setup-frame .setup > :nth-child(3) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .setup-frame .setup > :nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .setup-frame .setup > :nth-child(5) {
+    grid-column: 2;
+    grid-row: 3;
+    margin-top: 8px;
+  }
+  .setup-frame .setup > :nth-child(6) {
+    grid-column: 2;
+    grid-row: 4;
+  }
+  .setup-frame .setup-h:nth-child(3) {
+    margin-top: 0;
+  }
+  .setup-frame .setup-h .dim {
+    display: none;
+  }
+}
+@media (max-height: 500px) {
+  .setup-h {
+    margin: 8px 0 4px;
+  }
+  .tire-opt {
+    padding: 6px 1px 5px;
+  }
+  .tire-opt .tire-badge {
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+  }
+  .setup .seg button {
+    min-height: 44px;
+    padding: 3px 4px;
+  }
+  .tire-step .st {
+    min-height: 28px;
+  }
+}

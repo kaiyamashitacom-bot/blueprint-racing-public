@@ -1,0 +1,6 @@
+# 作るときの設定の見本。写して server/.dev.vars にする (.dev.vars は git に入れない)
+# 管理者のログイン ID (カンマ区切り)。パスワードを戻せる
+BPR_ADMIN_IDS=
+# 作るときだけ: "1" なら管理者が季節と大会の時計をずらせる (POST /api/admin/dev/clock。季節の締めや大会を試すため。本番には書かない)
+# (BPR_DEV=1 でも同じ)
+BPR_DEV_CLOCK=

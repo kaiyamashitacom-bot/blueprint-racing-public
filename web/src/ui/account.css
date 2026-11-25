@@ -1,0 +1,365 @@
+/* ログイン・登録・お店の画面 (F1 中継風)。色と字体は style.css の :root を使う */
+
+.acc {
+  max-width: 920px;
+}
+.acc-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.acc-top h2 {
+  margin: 0;
+  font-family: var(--f-head);
+  font-size: clamp(24px, 6vw, 34px);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+.acc-top .label {
+  margin-left: auto;
+}
+
+/* 2 列 (スマホでは 1 列) */
+.acc-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+@media (max-width: 720px) {
+  .acc-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 入力の並び */
+.acc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.acc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.acc-field > span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.acc-field > small {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.acc-field input {
+  width: 100%;
+  font-size: 16px; /* iPhone で拡大されない大きさ */
+}
+.acc-msg {
+  min-height: 1.5em;
+  font-size: 13px;
+  font-weight: 600;
+}
+.acc-msg.bad {
+  color: var(--bad);
+}
+.acc-msg.good {
+  color: var(--good);
+}
+.acc-notes {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+.acc-notes li + li {
+  margin-top: 4px;
+}
+
+/* ログイン / はじめる の切りかえ */
+.acc-tabs {
+  display: flex;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--panel-line);
+}
+.acc-tabs button {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  color: var(--ink-dim);
+  font-size: 15px;
+}
+.acc-tabs button.on {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+/* 自分のチームの札: 中継の名前の帯のように */
+.acc-plate {
+  display: grid;
+  grid-template-columns: 6px minmax(0, 1fr) auto;
+  align-items: stretch;
+  background: var(--paper-3);
+  border: 1px solid var(--panel-line);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+}
+.acc-plate::before {
+  content: "";
+  background: var(--accent);
+}
+.acc-plate .who {
+  padding: 10px 14px;
+  min-width: 0;
+}
+.acc-plate .team {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acc-plate .driver {
+  font-size: clamp(22px, 6vw, 30px);
+  font-weight: 900;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acc-plate .wallet {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 8px 26px 8px 14px;
+  background: var(--paper);
+}
+
+/* お金の大きな数字 */
+.acc-money {
+  font-family: var(--f-num);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: clamp(26px, 7vw, 36px);
+  line-height: 1;
+  color: var(--warn);
+  letter-spacing: 0.01em;
+}
+.acc-money.small {
+  font-size: 22px;
+}
+.acc-kv {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 14px;
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+.acc-kv dt {
+  color: var(--ink-dim);
+}
+.acc-kv dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+button.danger {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--bad) 60%, transparent);
+  color: var(--bad);
+}
+button.danger:hover {
+  background: color-mix(in srgb, var(--bad) 14%, transparent);
+}
+.acc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.acc-actions > button {
+  flex: 1 1 140px;
+}
+
+/* お店の表 */
+.shop-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.shop-kind {
+  margin: 18px 0 6px;
+  font-family: var(--f-num);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+.shop-kind:first-child {
+  margin-top: 0;
+}
+.shop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.shop-row {
+  display: grid;
+  grid-template-columns: 5px minmax(0, 1fr) auto;
+  gap: 0 12px;
+  align-items: center;
+  padding: 8px 10px 8px 0;
+  background: var(--paper-2);
+  border: 1px solid var(--panel-line);
+}
+.shop-row .bar {
+  align-self: stretch;
+  background: var(--k-frame);
+}
+.shop-row .info {
+  min-width: 0;
+}
+.shop-row .name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 800;
+}
+.shop-row .tier {
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 5px;
+  background: var(--ink-faint);
+  color: var(--ink-2);
+}
+.shop-row .tier.t2 {
+  background: var(--accent-2);
+  color: var(--paper);
+}
+.shop-row .note {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.shop-row .owned {
+  font-family: var(--f-num);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.shop-row .owned b {
+  font-size: 17px;
+  color: var(--ink);
+}
+.shop-buy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.shop-buy .price {
+  min-width: 4.2em;
+  text-align: right;
+  font-family: var(--f-num);
+  font-weight: 800;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.shop-step {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--panel-line);
+  background: rgba(0, 0, 0, 0.28);
+}
+.shop-step button {
+  min-height: 40px;
+  width: 34px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+.shop-step span {
+  min-width: 1.8em;
+  text-align: center;
+  font-family: var(--f-num);
+  font-weight: 800;
+  font-size: 17px;
+}
+.shop-buy button.go {
+  min-height: 40px;
+  padding: 6px 20px 6px 12px;
+}
+@media (max-width: 560px) {
+  .shop-row {
+    grid-template-columns: 5px minmax(0, 1fr);
+    gap: 8px 10px;
+  }
+  .shop-buy {
+    grid-column: 2;
+    justify-content: flex-end;
+  }
+}
+.k-seat {
+  background: var(--k-seat) !important;
+}
+.k-engine {
+  background: var(--k-engine) !important;
+}
+.k-tire {
+  background: var(--k-tire) !important;
+}
+.k-tank {
+  background: var(--k-tank) !important;
+}
+.k-wing {
+  background: var(--k-wing) !important;
+}
+.k-brake {
+  background: var(--k-brake) !important;
+}
+.k-frame {
+  background: var(--k-frame) !important;
+}
+.k-cooler {
+  background: var(--k-cooler) !important;
+}
+.k-battery {
+  background: var(--k-battery) !important;
+}
+.k-gearbox {
+  background: var(--k-gearbox) !important;
+}
+.k-susp {
+  background: var(--k-susp) !important;
+}
+.k-ballast {
+  background: var(--k-ballast) !important;
+}
+
+/* 下に出る短い知らせ */
+.acc-toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 800;
+  font-size: 14px;
+  z-index: 50;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.acc-toast.bad {
+  background: var(--bad);
+  color: #fff;
+}

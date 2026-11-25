@@ -1,0 +1,305 @@
+/* オープニング (opening.ts)。設計図の青い紙に白い線、題名は F1 中継風 (赤い BPR の札・斜体)。
+   縦のスマホ・横のスマホ (高さ 360 ほど)・パソコンで崩れないように。端は safe-area を空ける */
+.op {
+  --op-line: #cfe3ff;
+  --op-bp: #0b2a55;
+  --op-bp2: #061a38;
+  --op-shade: 0;
+  --op-pad-t: max(14px, env(safe-area-inset-top));
+  --op-pad-r: max(16px, env(safe-area-inset-right));
+  --op-pad-b: max(14px, env(safe-area-inset-bottom));
+  --op-pad-l: max(16px, env(safe-area-inset-left));
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: var(--op-pad-t) var(--op-pad-r) var(--op-pad-b) var(--op-pad-l);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  color: #fff;
+  background: var(--op-bp2);
+  outline: none;
+}
+
+/* 紙: 青の濃淡 + マス目 (大 = 細 5 つ)。題名が出ると暗くなって字が立つ */
+.op-paper {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 70% at 50% 42%, var(--op-bp) 0%, var(--op-bp2) 100%);
+}
+.op-paper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(3, 8, 20);
+  opacity: calc(var(--op-shade) * 0.9);
+}
+.op-grid {
+  position: absolute;
+  inset: -120px 0 0;
+  opacity: 0.55;
+  background-image:
+    linear-gradient(rgba(170, 205, 255, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(170, 205, 255, 0.22) 1px, transparent 1px),
+    linear-gradient(rgba(170, 205, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(170, 205, 255, 0.09) 1px, transparent 1px);
+  background-size:
+    120px 120px,
+    120px 120px,
+    24px 24px,
+    24px 24px;
+  background-position: center top;
+  animation: op-drift 8.6s linear infinite;
+}
+@keyframes op-drift {
+  to {
+    transform: translateY(120px);
+  }
+}
+
+/* 並び: 縦 (スマホ縦・パソコン) は 図面の下に題名。横で低い画面は 左に図面・右に題名 */
+.op-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 3vh, 28px);
+}
+.op-art {
+  flex: 0 1 auto;
+  min-height: 0;
+  height: min(54vh, 54dvh, calc((100vw - 32px) * 1.75));
+  aspect-ratio: 400 / 700;
+  display: flex;
+  justify-content: center;
+}
+.op-car {
+  height: 100%;
+  width: auto;
+  overflow: visible;
+  transform-origin: 50% 50%;
+}
+.op-s,
+.op-d {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0;
+}
+.op-s {
+  stroke: var(--op-line);
+  stroke-width: 3.4;
+  filter: drop-shadow(0 0 3px rgba(207, 227, 255, 0.35));
+}
+.op-d {
+  stroke: rgba(207, 227, 255, 0.55);
+  stroke-width: 2;
+}
+.op-car text {
+  fill: rgba(207, 227, 255, 0.8);
+  font-family: var(--f-num);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: 0.08em;
+  opacity: 0;
+}
+
+.op-title {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: clamp(30px, 10.5vw, 76px);
+}
+.op-h1 {
+  margin: 0;
+  font-size: 1em;
+  line-height: 1;
+}
+.op-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  opacity: 0;
+  will-change: clip-path, transform;
+}
+.op-bpr {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 0.62em;
+  line-height: 1.05;
+  color: #fff;
+  background: var(--accent);
+  padding: 0.04em 0.38em 0 0.3em;
+  clip-path: polygon(0.28em 0, 100% 0, calc(100% - 0.28em) 100%, 0 100%);
+}
+.op-name {
+  font-family: var(--f-num);
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+  color: var(--ink);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+}
+.op-name em {
+  font-style: italic;
+  color: var(--accent);
+}
+.op-rule {
+  align-self: stretch;
+  height: 0.09em;
+  margin-top: 0.22em;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+.op-prompt {
+  margin-top: 0.75em;
+  font-family: var(--f-ui);
+  font-size: max(14px, 0.24em);
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: var(--ink);
+  opacity: 0;
+  white-space: nowrap;
+}
+.op-done .op-prompt {
+  animation: op-blink 1.6s ease-in-out 0.2s infinite;
+}
+@keyframes op-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* 隅: 上の段 (左 版・右 名前) と 下のお知らせ。中の図面と題名は残りの高さに収める */
+.op-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 20px;
+}
+.op-corner {
+  font-size: 12px;
+  line-height: 20px;
+  color: rgba(207, 227, 255, 0.72);
+  z-index: 1;
+}
+.op-ver {
+  font-family: var(--f-num);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+.op-who {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 60vw;
+}
+.op-who b {
+  font-size: 14px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.op-who .label {
+  color: rgba(207, 227, 255, 0.6);
+}
+.op-link {
+  /* 指で押しやすい大きさ (見た目は小さな字) */
+  margin: -12px -10px;
+  padding: 12px 10px;
+  min-height: 0;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.op-link:hover {
+  background: none;
+  color: #fff;
+}
+.op-news {
+  position: relative;
+  flex: none;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+  z-index: 1;
+  animation: op-in 0.4s ease-out;
+}
+.op-news[hidden] {
+  display: none;
+}
+.op-news-tag {
+  flex: none;
+  padding: 1px 8px;
+  background: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.op-news-text {
+  min-width: 0;
+  max-width: 46em;
+  overflow-wrap: anywhere;
+}
+@keyframes op-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* 横のスマホ (低い画面): 左に図面、右に題名 */
+@media (orientation: landscape) and (max-height: 560px) {
+  .op-stage {
+    flex-direction: row;
+    gap: clamp(16px, 5vw, 56px);
+    padding: 4px 0;
+  }
+  .op-art {
+    height: 100%;
+  }
+  .op-title {
+    font-size: clamp(28px, 6.4vw, 60px);
+    align-items: flex-start;
+  }
+  .op-prompt {
+    align-self: flex-start;
+  }
+  .op-news {
+    justify-content: flex-start;
+    font-size: 12px;
+  }
+}
+
+/* 動きを減らす設定: 紙は止める・案内は点滅しない (線は opening_plan の still ですぐ最後の形) */
+@media (prefers-reduced-motion: reduce) {
+  .op-grid,
+  .op-done .op-prompt {
+    animation: none;
+  }
+}

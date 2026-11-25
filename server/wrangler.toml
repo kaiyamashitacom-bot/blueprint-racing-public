@@ -1,0 +1,43 @@
+# 置き場所: 嵐の環とは別の Cloudflare アカウント (作るのはユーザー)。今は wrangler dev で Mac の中だけで動かす
+name = "blueprint-racing"
+# 置き先 (11/25 ユーザーが作った レース用の別のアカウント。嵐の環とは別)
+account_id = "d81aa234f083438573cf7de69932eb85"
+main = "src/worker.ts"
+compatibility_date = "2026-10-01"
+
+[assets]
+directory = "../web/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/ws", "/health", "/api/*"]
+
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "RaceRoomDO"
+
+# アカウント・持ち物・財布 (全員で 1 つ、SQLite)。管理者の ID は BPR_ADMIN_IDS (作るときは server/.dev.vars、本番は wrangler secret)
+[[durable_objects.bindings]]
+name = "ACCOUNTS"
+class_name = "AccountsDO"
+
+# リーグ戦 (2 時間ごとの自動のレース。全員で 1 つ、SQLite)。開発用の受け口は server/.dev.vars の BPR_DEV=1 のときだけ (本番には書かない)
+[[durable_objects.bindings]]
+name = "LEAGUE"
+class_name = "LeagueDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RaceRoomDO"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["AccountsDO"]
+
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["LeagueDO"]
+
+# リーグ戦の 2 時間ごとのレース: 日本時間の 0・2・4 … 22 時 = 協定世界時 (UTC) の奇数時。cron は UTC で書く
+# (置いた (deploy) ときだけ効く。手元の wrangler dev では動かない。LeagueDO は自分でも次の枠のあとに alarm で起きる)
+[triggers]
+crons = ["0 1-23/2 * * *"]
